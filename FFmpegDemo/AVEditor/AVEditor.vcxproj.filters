@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{5f69667f-1121-495e-b822-89bb89aefd12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{7e593ed3-871f-498d-a3aa-8b579542604e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Apis">
+      <UniqueIdentifier>{898075bf-c90b-4ce8-a08e-f679706dee1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Editor">
+      <UniqueIdentifier>{3adcd39e-0f20-460e-9381-a5772a0fdb30}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AVEditor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Common.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Queue.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Thread.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Demuxer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\FormatContext.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\Cale.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\CodecContext.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\Frame.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\Packet.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\Resample.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Muxer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Encoder.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Decoder.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Cache.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\QueueItem.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Stage.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\AudioFifo.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\Device.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Convert.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Editor.h">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\Filter.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Filtrate.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\BaseContext.h">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\InputContext.h">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\OutputContext.h">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Transcoder.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Apis\Sdl.h">
+      <Filter>Apis</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Player.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Common.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Thread.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Demuxer.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\FormatContext.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\Cale.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\CodecContext.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\Frame.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\Packet.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\Resample.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Muxer.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Decoder.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Encoder.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Queue.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Cache.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\QueueItem.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Stage.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\AudioFifo.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\Device.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Convert.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Editor.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\Filter.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Filtrate.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\BaseContext.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\InputContext.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\OutputContext.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Transcoder.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Apis\Sdl.cpp">
+      <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Player.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
