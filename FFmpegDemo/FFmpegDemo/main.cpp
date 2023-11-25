@@ -206,7 +206,6 @@ void Play()
 
 		Player->SetFinishedCallback([&Editor]() {
 			Editor.Stop();
-			Editor.GetCache().Release();
 			}
 		);
 
@@ -270,7 +269,7 @@ int main()
 	
 	//Concat();
 	//Cover();
-	Play();
+	//Play();
 	//DetachAudioStream();
 	//RecordAudio();
 	//MixAudio();

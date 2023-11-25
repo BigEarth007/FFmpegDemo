@@ -35,7 +35,7 @@ namespace aveditor
 		if (m_nMaxCacheSize > 0 && m_nMaxCacheSize < m_Cache->Size(n_nKey))
 		{
 			int nMin = m_nMaxCacheSize / 2;
-			while (m_Cache->Size(n_nKey) > nMin)
+			while (!IsStop() && m_Cache->Size(n_nKey) > nMin)
 			{
 				Sleep(kSleepDelay * 10);
 			}

@@ -45,11 +45,7 @@ namespace aveditor
 		while (!IsStop() && QueueItem)
 		{
 			ret = DecodePacket(QueueItem, nKeyCurrent);
-			if (ret == AVERROR_EOF)
-			{
-				Sleep(kSleepDelay);
-				break;
-			}
+			if (ret == AVERROR_EOF) break;
 
 			StageSleep();
 		}
@@ -73,7 +69,11 @@ namespace aveditor
 		AVPacket* Packet = nullptr;
 
 		int ret = m_Cache->Pop(n_QueueItem, Packet);
-		if (ret < 0) return ret;
+		if (ret < 0)
+		{
+			Sleep(kSleepDelay);
+			return ret;
+		}
 
 		//if (Packet)
 		//{

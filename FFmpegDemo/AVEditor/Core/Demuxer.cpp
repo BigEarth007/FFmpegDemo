@@ -128,7 +128,7 @@ namespace aveditor
 			//LogInfo("Current size: %zd, Stream index: %d.\n", 
 			//			m_Cache->Size(nKey), Packet->stream_index);
 
-			//ConsumeCache(nKey, 20);
+			//ConsumeCache(nKey);
 			QueueItems[(int)eStreamType]->Push(Packet);
 
 			// Current Packet is push into queue, so we need a new one
