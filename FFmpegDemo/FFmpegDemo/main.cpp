@@ -17,32 +17,20 @@ void Cover()
 		CEditor Editor;
 		 
 		FFormatContext& Input = Editor.OpenInputFile("1.mp4");		 
-		FFormatContext& Output = Editor.AllocOutputFile("1.avi");
+		FFormatContext& Output = Editor.AllocOutputFile("1.mov");
 		 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
 		 
-		Editor.CreateDemuxer();
-		CDemuxer* Demuxer = (CDemuxer*)Editor.GetCache().GetContextInfo(0)->Muxer;
+		Editor.CreateAllStage();
+		//CDemuxer* Demuxer = (CDemuxer*)Editor.GetCache().GetContextInfo(0)->Muxer;
 		// We just need one section of the input context, it can be used for video cut
-		Demuxer->SelectSection(70, 330);
+		//Demuxer->SelectSection(70, 330);
 
-		// Both of the following are ok
-		// As .mp4 and .mov support the same audio and video encoding types,
-		// the following step can be omitted
-		// If convert .mp4 to .avi, do decoding and encoding is a good choose
-#if 1
-		Editor.CreateDecoder();
-		Editor.CreateEncoder();
-#else
-		Editor.CreateTranscoder();
-#endif
-
-		Editor.CreateMuxer();
-		 
-		Editor.Start();
-		Editor.Join();
-		Editor.CloseOutputFile();
+		Editor.StartEdit();
+		Editor.JoinEdit();
+		// Or you can start a thread to edit video
+		// Editor.Start();
 	}
 	catch (const std::exception& e)
 	{
@@ -59,31 +47,17 @@ void Concat()
 
 		FFormatContext& Input = Editor.OpenInputFile("1.mp4");
 		FFormatContext& Input2 = Editor.OpenInputFile("2.mp4");
-		//auto m = Input.GetDecoderCodecContext();
 
 		FFormatContext& Output = Editor.AllocOutputFile("3.mp4");
 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
+		Editor.CreateAllStage();
 
-		Editor.CreateDemuxer();
-
-		// Both of the following are ok
-		// As input video and output video support the same audio and video 
-		// encoding types, the following step can be omitted
-		// If output video is .avi, do decoding and encoding is a good choose
-#if 0
-		Editor.CreateDecoder();
-		Editor.CreateEncoder();
-#else
-		Editor.CreateTranscoder();
-#endif
-
-		Editor.CreateMuxer();
-
-		Editor.Start();
-		Editor.Join();
-		Editor.CloseOutputFile();
+		Editor.StartEdit();
+		Editor.JoinEdit();
+		// Or you can start a thread to edit video
+		// Editor.Start();
 	}
 	catch (const std::exception& e)
 	{
@@ -98,31 +72,17 @@ void DetachAudioStream()
 	{
 		CEditor Editor;
 
-		FFormatContext& Input = Editor.OpenInputFile("2.mov", EJob::EJ_Normal, kStreamAudio);
-
-		FFormatContext& Output = Editor.AllocOutputFile("2.aac");
+		FFormatContext& Input = Editor.OpenInputFile("1.mp4", EJob::EJ_Normal, kStreamAudio);
+		FFormatContext& Output = Editor.AllocOutputFile("1.mp3");
 
 		Output.BuildAllStreams(Input, kStreamAudio);
 		Editor.OpenOutputFile();
+		Editor.CreateAllStage();
 
-		Editor.CreateDemuxer();
-
-		// Both of the following are ok
-		// As input video and output video support the same audio and video 
-		// encoding types, the following step can be omitted
-		// If output video is .avi, do decoding and encoding is a good choose
-#if 0
-		Editor.CreateDecoder();
-		Editor.CreateEncoder();
-#else
-		Editor.CreateTranscoder();
-#endif
-
-		Editor.CreateMuxer();
-
-		Editor.Start();
-		Editor.Join();
-		Editor.CloseOutputFile();
+		Editor.StartEdit();
+		Editor.JoinEdit();
+		// Or you can start a thread to edit video
+		// Editor.Start();
 	}
 	catch (const std::exception& e)
 	{
@@ -138,30 +98,19 @@ void MixAudio()
 	{
 		CEditor Editor;
 
-		FFormatContext& Input = Editor.OpenInputFile("1.mp4", EJob::EJ_AMixMain);
-		FFormatContext& Input2 = Editor.OpenInputFile("chuanqi.mp3", EJob::EJ_AMixBranch);
+		FFormatContext& Input = Editor.OpenInputFile("2.mp4", EJob::EJ_AMixMain);
+		FFormatContext& Input2 = Editor.OpenInputFile("1.mp3", EJob::EJ_AMixBranch);
 
-		FFormatContext& Output = Editor.AllocOutputFile("2.mp4");
+		FFormatContext& Output = Editor.AllocOutputFile("2.mov");
 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
+		Editor.CreateAllStage();
 
-		Editor.CreateDemuxer();
-
-		// Both of the following are ok
-		// As input video and output video support the same audio and video 
-		// encoding types, the following step can be omitted
-		// If output video is .avi, do decoding and encoding is a good choose
-
-		Editor.CreateDecoder();
-		Editor.CreateFilter(EStreamType::EST_Audio);
-		Editor.CreateEncoder();
-
-		Editor.CreateMuxer();
-
-		Editor.Start();
-		Editor.Join();
-		Editor.CloseOutputFile();
+		Editor.StartEdit();
+		Editor.JoinEdit();
+		// Or you can start a thread to edit video
+		// Editor.Start();
 	}
 	catch (const std::exception& e)
 	{
@@ -192,9 +141,6 @@ void Play()
 		AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::EST_Audio);
 		aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S32;
 
-		Editor.CreateDemuxer();
-		Editor.CreateDecoder();
-
 		CPlayer* Player = Editor.CreatePlayer();
 		Player->InitAudio(aoCodec);
 
@@ -205,12 +151,15 @@ void Play()
 		);
 
 		Player->SetFinishedCallback([&Editor]() {
-			Editor.Stop();
+			Editor.StopEdit();
+			Editor.GetCache().Release();
 			}
 		);
 
-		Editor.Start();
-		Editor.Join();
+		Editor.StartEdit();
+		Editor.JoinEdit();
+		// Or you can start a thread to edit video
+		// Editor.Start();
 	}
 	catch (const std::exception& e)
 	{
@@ -237,23 +186,16 @@ void RecordAudio()
 
 		FFormatContext& Input = Editor.OpenInputFile(sUtf8, EJob::EJ_Normal, 
 			kStreamAll, Device.m_InputFormat);
-
 		FFormatContext& Output = Editor.AllocOutputFile("record.aac");
 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
+		Editor.CreateAllStage();
 
-		Editor.CreateDemuxer();
-
-		//Editor.CreateDecoder();
-		//Editor.CreateEncoder();
-		Editor.CreateTranscoder();
-
-		Editor.CreateMuxer();
-
-		Editor.Start();
-		Editor.Join();
-		Editor.CloseOutputFile();
+		Editor.StartEdit();
+		Editor.JoinEdit();
+		// Or you can start a thread to edit video
+		// Editor.Start();
 	}
 	catch (const std::exception& e)
 	{
@@ -267,12 +209,12 @@ int main()
 	auto start = std::chrono::steady_clock::now();
 	//SetupEditorLog();
 	
-	//Concat();
 	//Cover();
-	//Play();
+	//Concat();
 	//DetachAudioStream();
-	//RecordAudio();
 	//MixAudio();
+	//Play();
+	//RecordAudio();
 
 	auto end = std::chrono::steady_clock::now();
 	auto tt = end - start;

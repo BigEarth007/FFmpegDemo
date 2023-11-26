@@ -41,30 +41,6 @@ namespace aveditor
 			m_Context.WriteTrailer();
 	}
 
-	void COutputContext::CreateEncoder()
-	{
-		AVStream* Stream = nullptr;
-		EStreamType eStreamType = EStreamType::EST_Max;
-		std::map<EStreamType, FCodecContext>* mOutputCodecContext = m_Context.GetCodecContext();
-
-		for (unsigned int i = 0; i < m_Context.m_Context->nb_streams; i++)
-		{
-			Stream = m_Context.m_Context->streams[i];
-			eStreamType = kStreamIndex.at(Stream->codecpar->codec_type);
-
-			auto itr = mOutputCodecContext->find(eStreamType);
-			if (itr == mOutputCodecContext->end()) continue;
-
-			int nPrefix = m_Cache->CreateCache(EStage::ES_Encode,
-				EItemType::EIT_Packet, 0, eStreamType);
-
-			CEncoder* Encoder = new CEncoder(*m_Cache, nPrefix, eStreamType);
-			Encoder->Init(itr->second.m_Context);
-
-			m_vStages->emplace_back(Encoder);
-		}
-	}
-
 	CMuxer* COutputContext::CreateMuxer()
 	{
 		ThrowExceptionExpr(m_Context.StreamSize() == 0,

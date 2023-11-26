@@ -161,8 +161,8 @@ namespace aveditor
 		{
 			m_Queue.Clear(
 				[this](void* n_Item) {
-					AVFrame* Frame = (AVFrame*)n_Item;
-					av_frame_free(&Frame);
+					AVPacket* Packet = (AVPacket*)n_Item;
+					av_packet_free(&Packet);
 				}
 			);
 		}
@@ -171,8 +171,8 @@ namespace aveditor
 		{
 			m_Queue.Clear(
 				[this](void* n_Item) {
-					AVPacket* Packet = (AVPacket*)n_Item;
-					av_packet_free(&Packet);
+					AVFrame* Frame = (AVFrame*)n_Item;
+					av_frame_free(&Frame);
 				}
 			);
 		}

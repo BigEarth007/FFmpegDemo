@@ -69,42 +69,42 @@ namespace aveditor
 		// Cast duration of last input context to pts
 		int64_t		nPts = 0;
 
-		FPacketCache mPacketCache[(int)EStreamType::EST_Max];
+		FPacketCache PacketCaches[(int)EStreamType::EST_Max];
 
 		for (int i = 0; i < (int)EStreamType::EST_Max; i++)
 		{
+			if (n_ContextInfo.nStreams[i] == -1) continue;
+			PacketCaches[i].nStatus = 0;
+
 			AVRational Timebase =
 				m_OutputContext->GetCodecContextTimeBase((EStreamType)i);
-			mPacketCache[i].dTimebase = av_q2d(Timebase);
+			PacketCaches[i].dTimebase = av_q2d(Timebase);
 
 			nCurKey = m_nPreviousPrefix + i;
-			mPacketCache[i].QueueItem = m_Cache->GetBufferQueue(nCurKey);
-
-			if (n_ContextInfo.nStreams[i] == -1)
-				mPacketCache[i].bFinished = true;
+			PacketCaches[i].QueueItem = m_Cache->GetBufferQueue(nCurKey);
 		}
 
 		while (!IsStop())
 		{
 			for (int i = 0; i < (int)EStreamType::EST_Max; i++)
 			{
-				if (mPacketCache[i].Packet || mPacketCache[i].bFinished)
+				if (PacketCaches[i].Packet || PacketCaches[i].nStatus != 0)
 					continue;
 
 				// Get the first packet
-				ret = m_Cache->Pop(mPacketCache[i].QueueItem, 
-					mPacketCache[i].Packet);
+				ret = m_Cache->Pop(PacketCaches[i].QueueItem, 
+					PacketCaches[i].Packet);
 				if (ret < 0) break;
 
 				// If Packet is nullptr, it's last packet
-				if (!mPacketCache[i].Packet)
+				if (!PacketCaches[i].Packet)
 				{
-					mPacketCache[i].bFinished = true;
+					PacketCaches[i].nStatus = 1;
 					continue;
 				}
 
-				mPacketCache[i].dTimestamp =
-					mPacketCache[i].Packet->pts * mPacketCache[i].dTimebase;
+				PacketCaches[i].dTimestamp =
+					PacketCaches[i].Packet->pts * PacketCaches[i].dTimebase;
 			}
 
 			// One or more streams are waiting for packet
@@ -119,37 +119,37 @@ namespace aveditor
 
 			for (int i = 0; i < (int)EStreamType::EST_Max; i++)
 			{
-				if (mPacketCache[i].bFinished)
+				if (PacketCaches[i].nStatus != 0)
 					nCount++;
 				else if (nMinStreamType == -1 ||
-					mPacketCache[nMinStreamType].dTimestamp > mPacketCache[i].dTimestamp)
+					PacketCaches[nMinStreamType].dTimestamp > PacketCaches[i].dTimestamp)
 					nMinStreamType = i;
 			}
 
 			// All stream queues have pop all packet
 			if ((int)EStreamType::EST_Max == nCount) break;
 			// The duration of audio stream should not large than video stream
-			if (mPacketCache[(int)EStreamType::EST_Video].bFinished &&
-				mPacketCache[(int)EStreamType::EST_Video].dTimestamp < 
-					mPacketCache[nMinStreamType].dTimestamp)
+			if (PacketCaches[(int)EStreamType::EST_Video].nStatus == 1 &&
+				PacketCaches[(int)EStreamType::EST_Video].dTimestamp < 
+					PacketCaches[nMinStreamType].dTimestamp)
 				break;
 
-			if (mPacketCache[nMinStreamType].Packet->pts < 0)
+			if (PacketCaches[nMinStreamType].Packet->pts < 0)
 			{
-				m_dDuration -= mPacketCache[nMinStreamType].dTimestamp;
-				nPts -= mPacketCache[nMinStreamType].Packet->pts;
+				m_dDuration -= PacketCaches[nMinStreamType].dTimestamp;
+				nPts -= PacketCaches[nMinStreamType].Packet->pts;
 			}
 
-			nPts = (int64_t)(m_dDuration / mPacketCache[nMinStreamType].dTimebase);
-			mPacketCache[nMinStreamType].Packet->stream_index = 
+			nPts = (int64_t)(m_dDuration / PacketCaches[nMinStreamType].dTimebase);
+			PacketCaches[nMinStreamType].Packet->stream_index = 
 				n_ContextInfo.nStreams[nMinStreamType];
-			mPacketCache[nMinStreamType].Packet->pts += nPts;
-			mPacketCache[nMinStreamType].Packet->dts += nPts;
+			PacketCaches[nMinStreamType].Packet->pts += nPts;
+			PacketCaches[nMinStreamType].Packet->dts += nPts;
 
-			m_OutputContext->InterleavedWritePacket(mPacketCache[nMinStreamType].Packet);
+			m_OutputContext->InterleavedWritePacket(PacketCaches[nMinStreamType].Packet);
 
-			av_packet_free(&mPacketCache[nMinStreamType].Packet);
-			mPacketCache[nMinStreamType].Packet = nullptr;
+			av_packet_free(&PacketCaches[nMinStreamType].Packet);
+			PacketCaches[nMinStreamType].Packet = nullptr;
 
 			//m_Cache->DebugBufferQueue();
 		}

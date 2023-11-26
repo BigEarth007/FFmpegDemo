@@ -20,7 +20,10 @@ namespace aveditor
 			CQueueItem* QueueItem = nullptr;
 			double		dTimestamp = 0.0f;
 			double		dTimebase = 0.0f;
-			bool		bFinished = false;
+			// -1: not use
+			// 0: using
+			// 1: finished
+			int			nStatus = -1;
 		};
 
 		// Write all AVPacket into output context

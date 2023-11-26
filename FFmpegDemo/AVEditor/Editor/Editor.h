@@ -3,7 +3,7 @@
 
 namespace aveditor
 {
-	class AVEDITOR_API CEditor
+	class AVEDITOR_API CEditor : public Thread
 	{
 	public:
 		CEditor();
@@ -39,11 +39,14 @@ namespace aveditor
 
 		virtual void CreateMuxer();
 
+		virtual void Run();
+
 		virtual CPlayer* CreatePlayer();
 
-		void Start();
-		void Stop();
-		void Join();
+		void CreateAllStage();
+		void StartEdit();
+		void StopEdit();
+		void JoinEdit();
 		virtual void Release();
 
 	protected:

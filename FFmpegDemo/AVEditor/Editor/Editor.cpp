@@ -163,32 +163,74 @@ namespace aveditor
 	void CEditor::CreateMuxer()
 	{
 		CMuxer* Muxer = m_OutputContext.CreateMuxer();
-		Muxer->SetFinishedCallback([this]() {
-			Stop();
+		Muxer->SetFinishedCallback([this, &Muxer]() {
+			StopEdit();
+			CloseOutputFile();
 			}
 		);
+	}
+
+	void CEditor::Run()
+	{
+		StartEdit();
+		JoinEdit();
 	}
 
 	CPlayer* CEditor::CreatePlayer()
 	{
 		ThrowExceptionExpr(m_vInputContext.size() == 0, "No input context.\n");
 
+		CreateDemuxer();
+		CreateDecoder();
+
 		return m_vInputContext[0]->CreatePlayer();
 	}
 
-	void CEditor::Start()
+	void CEditor::CreateAllStage()
+	{
+		CreateDemuxer();
+
+		if (GetOutputContext().m_Context)
+		{
+			bool bFilter = false;
+			std::vector<FContextInfo>& vContextInfos = m_Cache.GetContextInfos();
+
+			for (size_t i = 0; i < vContextInfos.size(); i++)
+			{
+				if (vContextInfos[i].eJob == EJob::EJ_AMixMain ||
+					vContextInfos[i].eJob == EJob::EJ_AMixBranch)
+				{
+					bFilter = true;
+					break;
+				}
+			}
+
+			if (bFilter)
+			{
+				CreateDecoder();
+				CreateFilter(EStreamType::EST_Audio);
+				CreateEncoder();
+			}
+			else
+				CreateTranscoder();
+
+			CreateMuxer();
+		}
+	}
+
+	void CEditor::StartEdit()
 	{
 		for (size_t i = 0; i < m_vStages.size(); i++)
 			m_vStages[i]->Start();
 	}
 
-	void CEditor::Stop()
+	void CEditor::StopEdit()
 	{
 		for (size_t i = 0; i < m_vStages.size(); i++)
 			m_vStages[i]->Stop();
 	}
 
-	void CEditor::Join()
+	void CEditor::JoinEdit()
 	{
 		for (size_t i = 0; i < m_vStages.size(); i++)
 			m_vStages[i]->Join();
@@ -196,8 +238,8 @@ namespace aveditor
 
 	void CEditor::Release()
 	{
-		Stop();
-		Join();
+		StopEdit();
+		JoinEdit();
 
 		ReleaseVector(m_vStages);
 		m_OutputContext.Release();

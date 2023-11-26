@@ -73,6 +73,14 @@ namespace aveditor
 			auto itrOutput = mOutputCodecContext->find((EStreamType)i);
 			if (itrOutput == mOutputCodecContext->end()) continue;
 
+			// if n_OutputContext.m_Context == nullptr, it's playing video
+			// The same codec type, no need to decode
+			if (n_OutputContext.m_Context &&
+				itrInput->second.m_Context->codec_id ==
+				itrOutput->second.m_Context->codec_id &&
+				ContextInfo->eJob == EJob::EJ_Normal)
+				continue;
+
 			int nPrefix = m_Cache->CreateCache(EStage::ES_Decode,
 				EItemType::EIT_Frame, m_nContextIndex, (EStreamType)i);
 			CDecoder* Decoder = new CDecoder(*m_Cache, nPrefix, (EStreamType)i);
@@ -87,6 +95,7 @@ namespace aveditor
 		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
 		if (!ContextInfo) return;
 
+		std::map<EStreamType, FCodecContext>* mInputCodecContext = m_Context.GetCodecContext();
 		std::map<EStreamType, FCodecContext>* mOutputCodecContext = n_OutputContext.GetCodecContext();
 
 		for (int i = 0; i < (int)EStreamType::EST_Max; i++)
@@ -96,14 +105,23 @@ namespace aveditor
 				i == (int)EStreamType::EST_Audio)
 				continue;
 
-			auto itr = mOutputCodecContext->find((EStreamType)i);
-			if (itr == mOutputCodecContext->end()) continue;
+			auto itrInput = mInputCodecContext->find((EStreamType)i);
+			if (itrInput == mInputCodecContext->end()) continue;
+
+			auto itrOutput = mOutputCodecContext->find((EStreamType)i);
+			if (itrOutput == mOutputCodecContext->end()) continue;
+
+			// The same codec type, no need to encode
+			if (itrInput->second.m_Context->codec_id ==
+				itrOutput->second.m_Context->codec_id &&
+				ContextInfo->eJob == EJob::EJ_Normal)
+				continue;
 
 			int nPrefix = m_Cache->CreateCache(EStage::ES_Encode,
 				EItemType::EIT_Packet, m_nContextIndex, (EStreamType)i);
 
 			CEncoder* Encoder = new CEncoder(*m_Cache, nPrefix, (EStreamType)i);
-			Encoder->Init(itr->second.m_Context);
+			Encoder->Init(itrOutput->second.m_Context);
 
 			m_vStages->emplace_back(Encoder);
 		}
@@ -126,6 +144,12 @@ namespace aveditor
 
 			auto itrOutput = mOutputCodecContext->find((EStreamType)i);
 			if (itrOutput == mOutputCodecContext->end()) continue;
+
+			// The same codec type, no need to decode/encode
+			if (itrInput->second.m_Context->codec_id ==
+				itrOutput->second.m_Context->codec_id &&
+				ContextInfo->eJob == EJob::EJ_Normal)
+				continue;
 
 			int nPrefix = m_Cache->CreateCache(EStage::ES_Encode,
 				EItemType::EIT_Packet, m_nContextIndex, (EStreamType)i);

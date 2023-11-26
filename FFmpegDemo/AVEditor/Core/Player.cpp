@@ -7,7 +7,6 @@ namespace aveditor
 	CPlayer::CPlayer(FCache& n_Cache, const int& n_nPrefix)
 		: IStage(n_Cache, n_nPrefix, EStreamType::EST_Max)
 	{
-
 	}
 
 	CPlayer::~CPlayer()

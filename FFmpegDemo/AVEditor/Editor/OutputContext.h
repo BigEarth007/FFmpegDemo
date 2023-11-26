@@ -17,8 +17,6 @@ namespace aveditor
 		void OpenOutputFile();
 		void CloseOutputFile();
 
-		virtual void CreateEncoder();
-
 		virtual CMuxer* CreateMuxer();
 
 	};
