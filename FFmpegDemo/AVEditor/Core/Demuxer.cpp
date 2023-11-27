@@ -142,6 +142,10 @@ namespace aveditor
 
 		if (Packet) av_packet_free(&Packet);
 
+		// For recording, close device context while exit
+		if (m_InputContext->m_Context->iformat)
+			avformat_close_input(&m_InputContext->m_Context);
+
 		Thread::Run();
 	}
 
