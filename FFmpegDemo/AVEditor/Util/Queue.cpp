@@ -68,6 +68,8 @@ namespace aveditor
 		}
 
 		m_nSize = 0;
+		m_head = nullptr;
+		m_last = nullptr;
 	}
 
 #endif // !STD_QUEUE
