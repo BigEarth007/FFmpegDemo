@@ -24,10 +24,6 @@ namespace aveditor
 			"You should call function Init() first.\n");
 		ThrowExceptionExpr(!m_Cache, "Invalid buffer.\n");
 
-		EStage eStage = EStage::ES_Encode;
-		if (!m_Cache->IsStageExist(eStage))
-			eStage = EStage::ES_Demux;
-
 		try
 		{
 			auto& vContextInfo = m_Cache->GetContextInfos();
@@ -43,7 +39,6 @@ namespace aveditor
 						"Missing video stream for output context.\n");
 				}
 
-				m_nPreviousPrefix = StageToPrefix(eStage, (int)i);
 				m_Cache->SetSelectedContextIndex((int)i);
 				Muxing(vContextInfo[i]);
 			}
@@ -80,7 +75,7 @@ namespace aveditor
 				m_OutputContext->GetCodecContextTimeBase((EStreamType)i);
 			PacketCaches[i].dTimebase = av_q2d(Timebase);
 
-			nCurKey = m_nPreviousPrefix + i;
+			nCurKey = m_Cache->GetPreviousKeyPrefix(m_nPreviousPrefix + i) + i;
 			PacketCaches[i].QueueItem = m_Cache->GetBufferQueue(nCurKey);
 		}
 
