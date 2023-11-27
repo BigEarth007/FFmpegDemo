@@ -70,14 +70,9 @@ namespace aveditor
 			AVPixelFormat PixelFormat = InputContext->pix_fmt;
 			if (InputContext->hw_device_ctx)
 			{
-				AVHWFramesConstraints* Constraints =
-					av_hwdevice_get_hwframe_constraints(
-						InputContext->hw_device_ctx, nullptr);
-
-				if (Constraints->valid_hw_formats[0] == AVPixelFormat::AV_PIX_FMT_D3D11)
+				if (*(AVPixelFormat*)InputContext->opaque == 
+					AVPixelFormat::AV_PIX_FMT_D3D11)
 					PixelFormat = AVPixelFormat::AV_PIX_FMT_NV12;
-
-				av_hwframe_constraints_free(&Constraints);
 			}
 
 			if (InputContext->width != OutputContext->width ||
