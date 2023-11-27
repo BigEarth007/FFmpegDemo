@@ -183,7 +183,15 @@ namespace aveditor
 		CreateDemuxer();
 		CreateDecoder();
 
-		return m_vInputContext[0]->CreatePlayer();
+		CPlayer* Player = m_vInputContext[0]->CreatePlayer();
+
+		Player->SetFinishedCallback([this]() {
+			StopEdit();
+			m_Cache.Release();
+			}
+		);
+
+		return Player;
 	}
 
 	void CEditor::CreateAllStage()
