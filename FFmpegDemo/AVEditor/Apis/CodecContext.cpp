@@ -52,18 +52,23 @@ namespace aveditor
 	{
 		const AVCodec* Codec = nullptr;
 
-		switch (n_CodecID)
+		if (IsHwEncodeSupported())
 		{
-		case AVCodecID::AV_CODEC_ID_H264:
-			Codec = FindEncodeCodec("h264_nvenc");
-			break;
-		case AVCodecID::AV_CODEC_ID_HEVC:
-			Codec = FindEncodeCodec("hevc_nvenc");
-			break;
-		default:
-			Codec = avcodec_find_encoder(n_CodecID);
-			break;
+			switch (n_CodecID)
+			{
+			case AVCodecID::AV_CODEC_ID_H264:
+				Codec = FindEncodeCodec("h264_nvenc");
+				break;
+			case AVCodecID::AV_CODEC_ID_HEVC:
+				Codec = FindEncodeCodec("hevc_nvenc");
+				break;
+			default:
+				Codec = avcodec_find_encoder(n_CodecID);
+				break;
+			}
 		}
+		else
+			Codec = avcodec_find_encoder(n_CodecID);
 			
 		ThrowExceptionExpr(!Codec, "Fail to find encoder: %s",
 			avcodec_get_name(n_CodecID));
@@ -77,6 +82,33 @@ namespace aveditor
 		ThrowExceptionExpr(!Codec, "Fail to find encoder: %s", n_szName);
 
 		return Codec;
+	}
+
+	bool FCodecContext::IsHwEncodeSupported()
+	{
+		static int nHwEncodeSupported = -1;
+		if (nHwEncodeSupported != -1)
+			return nHwEncodeSupported == 1;
+
+		const AVCodec* Codec = FindEncodeCodec("h264_nvenc");
+		AVCodecContext* Context = avcodec_alloc_context3(Codec);
+
+		Context->width = 640;
+		Context->height = 480;
+		Context->bit_rate = 128000;
+		Context->time_base = { 1, 96000 };
+		Context->framerate = { 25, 1 };
+		Context->pix_fmt = *Codec->pix_fmts;
+
+		int ret = avcodec_open2(Context, Codec, nullptr);
+		if (ret == 0) 
+		{
+			nHwEncodeSupported = 1;
+			avcodec_free_context(&Context);
+		}
+		else nHwEncodeSupported = 0;
+
+		return nHwEncodeSupported == 1;
 	}
 
 	AVCodecContext* FCodecContext::Alloc(const AVCodec* n_Codec)
