@@ -16,6 +16,8 @@ namespace aveditor
 		static const AVCodec* FindEncodeCodec(AVCodecID n_CodecID);
 		// Find encode codec by name
 		static const AVCodec* FindEncodeCodec(const char* n_szName);
+		// Check if hardware encode supported
+		static bool IsHwEncodeSupported();
 
 		// Alloc codec context memory
 		AVCodecContext* Alloc(const AVCodec* n_Codec);
