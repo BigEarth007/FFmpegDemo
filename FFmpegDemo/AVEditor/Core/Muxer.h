@@ -27,7 +27,7 @@ namespace aveditor
 		};
 
 		// Write all AVPacket into output context
-		void Muxing(const FContextInfo& n_ContextInfo);
+		void Muxing(const int n_nIndex, const FContextInfo& n_ContextInfo);
 
 	protected:
 		// Output file
