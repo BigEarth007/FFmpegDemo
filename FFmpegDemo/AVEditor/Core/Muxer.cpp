@@ -40,7 +40,7 @@ namespace aveditor
 				}
 
 				m_Cache->SetSelectedContextIndex((int)i);
-				Muxing(vContextInfo[i]);
+				Muxing(i, vContextInfo[i]);
 			}
 		}
 		catch (std::exception& e)
@@ -52,7 +52,7 @@ namespace aveditor
 		Thread::Run();
 	}
 
-	void CMuxer::Muxing(const FContextInfo& n_ContextInfo)
+	void CMuxer::Muxing(const int n_nIndex, const FContextInfo& n_ContextInfo)
 	{
 		int			ret = 0;
 		// Current key of current stream index
@@ -75,7 +75,8 @@ namespace aveditor
 				m_OutputContext->GetCodecContextTimeBase((EStreamType)i);
 			PacketCaches[i].dTimebase = av_q2d(Timebase);
 
-			nCurKey = m_Cache->GetPreviousKeyPrefix(m_nPreviousPrefix + i) + i;
+			int nKey = m_nPreviousPrefix + n_nIndex * kEditorIndexFactor + i;
+			nCurKey = m_Cache->GetPreviousKeyPrefix(nKey) + i;
 			PacketCaches[i].QueueItem = m_Cache->GetBufferQueue(nCurKey);
 		}
 
