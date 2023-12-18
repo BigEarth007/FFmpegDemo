@@ -33,7 +33,6 @@ namespace aveditor
 		AVFrame*	Frame = nullptr;
 
 		std::vector<FContextInfo>	vContextInfos = m_Cache->GetContextInfos();
-		std::vector<CQueueItem*>	vQueueItems;
 
 		CQueueItem* OutputQueue = m_Cache->GetBufferQueue(nKeyCurrent);
 
@@ -44,20 +43,13 @@ namespace aveditor
 				if (vContextInfos[i].eJob == EJob::EJ_AMixMain ||
 					vContextInfos[i].eJob == EJob::EJ_AMixBranch)
 				{
-					if (vQueueItems.size() < vContextInfos[i].nFilterIndex + 1)
-					{
-						m_nPreviousPrefix = StageToPrefix(EStage::ES_Decode,
-							vContextInfos[i].nFilterIndex);
-						nKeyPrevious = m_nPreviousPrefix + (int)m_eStreamType;
+					m_nPreviousPrefix = StageToPrefix(EStage::ES_Decode,
+						vContextInfos[i].nFilterIndex);
+					nKeyPrevious = m_nPreviousPrefix + (int)m_eStreamType;
 
-						CQueueItem* q = m_Cache->GetBufferQueue(nKeyPrevious);
-						vQueueItems.push_back(q);
-					}
-
-					while (vQueueItems[vContextInfos[i].nFilterIndex])
+					while (true)
 					{
-						ret = m_Cache->Pop(
-							vQueueItems[vContextInfos[i].nFilterIndex], Frame);
+						ret = m_Cache->Pop(nKeyPrevious, Frame);
 						if (ret < 0)
 						{
 							Sleep(kSleepDelay);
