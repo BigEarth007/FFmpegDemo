@@ -47,9 +47,8 @@ namespace aveditor
 
 	bool Thread::IsStop()
 	{
-		if (m_bStop) return true;
-		
-		return false;
+		bool b = m_bStop;
+		return b;
 	}
 
 	void Thread::Sleep(uint32_t n_nDuration, ESleep n_eSleep /*= ESleep::ES_Millisecond*/)

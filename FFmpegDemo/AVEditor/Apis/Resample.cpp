@@ -107,6 +107,8 @@ namespace aveditor
 			free(m_CoverData);
 		}
 
+		m_nSamples = (int)av_rescale_rnd(n_nFrameSize, m_nOutputSampleRate, m_nInputSampleRate, AV_ROUND_UP);
+
 		/* Allocate as many pointers as there are audio channels.
 		 * Each pointer will later point to the audio samples of the corresponding
 		 * channels (although it may be NULL for interleaved formats).
@@ -118,10 +120,8 @@ namespace aveditor
 		/* Allocate memory for the samples of all channels in one consecutive
 		 * block for convenience. */
 		int ret = av_samples_alloc(m_CoverData, nullptr, n_nChannels,
-			n_nFrameSize, n_eOutputSampleFormat, 0);
+			m_nSamples, n_eOutputSampleFormat, 0);
 
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to allocate converted input samples.");
-
-		m_nSamples = n_nFrameSize;
 	}
 }

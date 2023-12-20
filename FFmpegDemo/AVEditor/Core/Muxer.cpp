@@ -40,7 +40,7 @@ namespace aveditor
 				}
 
 				m_Cache->SetSelectedContextIndex((int)i);
-				Muxing(i, vContextInfo[i]);
+				Muxing((int)i, vContextInfo[i]);
 			}
 		}
 		catch (std::exception& e)

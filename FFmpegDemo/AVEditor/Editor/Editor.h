@@ -43,6 +43,8 @@ namespace aveditor
 
 		virtual CPlayer* CreatePlayer();
 
+		void SetMaxCacheSize(int n_nIndex, unsigned int n_nMaxCacheSize);
+
 		void CreateAllStage();
 		void StartEdit();
 		void StopEdit();

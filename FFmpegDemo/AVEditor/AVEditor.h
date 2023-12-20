@@ -25,7 +25,7 @@ extern "C" {
 };
 #endif
 
-//#define STD_QUEUE
+#define STD_QUEUE
 #define AVEDITOR_API
 //#ifdef AVEDITOR_EXPORTS
 //#define AVEDITOR_API __declspec(dllexport)

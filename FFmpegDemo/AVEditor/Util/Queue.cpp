@@ -26,7 +26,7 @@ namespace aveditor
 
 	int Queue::Pop(void*& n_Item, const int n_nTimeout)
 	{
-		if (!m_head) return -1;
+		if (!m_head || m_nSize == 0) return -1;
 
 		FNode* Node = m_head;
 		n_Item = Node->item;
@@ -70,6 +70,12 @@ namespace aveditor
 		m_nSize = 0;
 		m_head = nullptr;
 		m_last = nullptr;
+	}
+
+	int Queue::Size()
+	{
+		int n = m_nSize;
+		return n;
 	}
 
 #endif // !STD_QUEUE

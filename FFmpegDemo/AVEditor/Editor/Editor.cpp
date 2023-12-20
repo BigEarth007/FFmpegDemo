@@ -194,6 +194,15 @@ namespace aveditor
 		return Player;
 	}
 
+	void CEditor::SetMaxCacheSize(int n_nIndex, unsigned int n_nMaxCacheSize)
+	{
+		for (size_t i = 0; i < m_vStages.size(); i++)
+		{
+			if (n_nIndex == -1 || i == n_nIndex)
+				m_vStages[i]->SetMaxCacheSize(n_nMaxCacheSize); 
+		}
+	}
+
 	void CEditor::CreateAllStage()
 	{
 		CreateDemuxer();

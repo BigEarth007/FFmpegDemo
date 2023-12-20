@@ -87,7 +87,7 @@ namespace aveditor
 
 		void Clear(std::function<void(void*)> func = nullptr);
 
-		int Size() { return m_nSize; }
+		int Size();
 
 		bool Empty() { return m_nSize == 0; }
 
