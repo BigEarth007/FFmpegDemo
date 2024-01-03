@@ -198,7 +198,7 @@ namespace aveditor
 		if (n_Stream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO)
 		{
 			if (n_Stream->avg_frame_rate.den == 1)
-				m_Context->framerate = av_inv_q(n_Stream->avg_frame_rate);
+				m_Context->framerate = n_Stream->avg_frame_rate;
 			else
 			{
 				float num = n_Stream->avg_frame_rate.num * 1.0f / n_Stream->avg_frame_rate.den;
