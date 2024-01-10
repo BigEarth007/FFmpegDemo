@@ -99,6 +99,8 @@ namespace aveditor
 		int ret = avcodec_parameters_copy(Stream->codecpar, n_Stream->codecpar);
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to copy parameters from stream.");
 
+		Stream->codecpar->codec_tag = n_Stream->codecpar->codec_tag;
+
 		return Stream;
 	}
 
