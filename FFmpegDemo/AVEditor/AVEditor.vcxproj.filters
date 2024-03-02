@@ -117,6 +117,9 @@
     <ClInclude Include="Apis\Sdl.h">
       <Filter>Apis</Filter>
     </ClInclude>
+    <ClInclude Include="Core\SDLPlayer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
     <ClInclude Include="Core\Player.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -208,6 +211,9 @@
     </ClCompile>
     <ClCompile Include="Apis\Sdl.cpp">
       <Filter>Apis</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\SDLPlayer.cpp">
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Player.cpp">
       <Filter>Core</Filter>

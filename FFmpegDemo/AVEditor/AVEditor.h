@@ -69,6 +69,7 @@ extern "C" {
 #include "Core/Decoder.h"
 #include "Core/Transcoder.h"
 #include "Core/Player.h"
+#include "Core/SDLPlayer.h"
 
 #include "Editor/BaseContext.h"
 #include "Editor/InputContext.h"

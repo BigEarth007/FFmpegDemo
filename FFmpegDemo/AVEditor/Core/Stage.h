@@ -14,6 +14,9 @@ namespace aveditor
 			const EStreamType& n_eStreamType);
 		virtual ~IStage();
 
+		void BaseInit(FCache& n_Cache, const int& n_nPrefix,
+			const EStreamType& n_eStreamType);
+
 		int GetContextIndex();
 
 		void SetMaxCacheSize(unsigned int n_nMaxCacheSize);

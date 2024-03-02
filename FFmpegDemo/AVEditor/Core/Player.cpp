@@ -4,51 +4,44 @@
 
 namespace aveditor
 {
-	CPlayer::CPlayer(FCache& n_Cache, const int& n_nPrefix)
+	IPlayer::IPlayer(FCache& n_Cache, const int& n_nPrefix)
 		: IStage(n_Cache, n_nPrefix, EStreamType::EST_Max)
 	{
 	}
 
-	CPlayer::~CPlayer()
+	IPlayer::~IPlayer()
 	{
 		Release();
 	}
 
-	void CPlayer::Init(const unsigned int n_nFlags, 
+	void IPlayer::Init(const unsigned int n_nFlags, 
 		const unsigned int n_nFrameDuration)
 	{
-		m_Sdl.Init(n_nFlags);
 		m_nFrameDuration = n_nFrameDuration;
 	}
 
-	void CPlayer::InitAudio(AVCodecContext* n_CodecContext)
+	void IPlayer::Start()
 	{
-		m_Sdl.InitAudio(n_CodecContext, AudioCallback, this);
-		m_CodecContext = n_CodecContext;
+		IStage::Start();
+		Play();
 	}
 
-	void CPlayer::InitVideo(const char* n_szTitle, const int n_nWidth, 
-		const int n_nHeight, const unsigned int n_nFlags)
+	void IPlayer::Play()
 	{
-		m_Sdl.InitVideo(n_szTitle, n_nWidth, n_nHeight, n_nFlags);
+		m_eState = EPlayState::EPS_Play;
 	}
 
-	void CPlayer::InitVideo(const void* n_WinId)
+	void IPlayer::Pause()
 	{
-		m_Sdl.InitVideo(n_WinId);
+		m_eState = EPlayState::EPS_Pause;
 	}
 
-	void CPlayer::Play()
+	int IPlayer::OnEvent()
 	{
-		m_Sdl.Play();
+		return 0;
 	}
 
-	void CPlayer::Pause()
-	{
-		m_Sdl.Pause();
-	}
-
-	void CPlayer::Run()
+	void IPlayer::Run()
 	{
 		ThrowExceptionExpr(!m_Cache, "Invalid buffer.\n");
 
@@ -63,11 +56,10 @@ namespace aveditor
 
 		PreRun();
 
-		while (!IsStop() && qVideo)
+		while (!IsStop() && qVideo && m_eState != EPlayState::EPS_Stop)
 		{
-			ret = SdlEvent();
-			if (ret < 0) break;
-			if (m_Sdl.IsPause())
+			if (ret < OnEvent()) break;
+			if (m_eState == EPlayState::EPS_Pause)
 			{
 				Sleep(kSleepDelay);
 				continue;
@@ -80,37 +72,27 @@ namespace aveditor
 				continue;
 			}
 
-			nDelay = 0;
-
 			ret = m_Cache->Pop(qVideo, Frame);
 			if (ret < 0) continue;
 
 			if (!Frame) break;
 
-			m_Sdl.UpdateYUV(Frame, 0);
+			VideoFrameArrived(Frame);
 
 			av_frame_free(&Frame);
+
+			nDelay = 0;
 		}
 
 		Pause();
 		Thread::Run();
 	}
 
-	void CPlayer::Release()
+	void IPlayer::VideoFrameArrived(const AVFrame* n_Frame)
 	{
-		m_Sdl.Release();
-
-		m_nFrameDuration = 40;
 	}
 
-	void CPlayer::AudioCallback(void* n_UserData, unsigned char* n_nStream, int n_nLen)
-	{
-		CPlayer* Player = (CPlayer*)n_UserData;
-		if (Player)
-			Player->AudioProc(n_nStream, n_nLen);
-	}
-
-	void CPlayer::AudioProc(unsigned char* n_nStream, int n_nLen)
+	int IPlayer::GetAudioFrame(std::function<void(const AVFrame*)> n_func)
 	{
 		ThrowExceptionExpr(!m_Cache, "Invalid buffer.\n");
 
@@ -118,42 +100,19 @@ namespace aveditor
 		AVFrame*	Frame = nullptr;
 
 		ret = m_Cache->Pop(m_qAudio, Frame);
-		if (ret < 0) return;
-
-		m_Sdl.UpdateAudio(Frame, n_nStream, n_nLen);
-
-		av_frame_free(&Frame);
-	}
-
-	int CPlayer::SdlEvent()
-	{
-		int ret = 0;
-		SDL_Event Event;
-
-		SDL_PumpEvents();
-
-		if (SDL_PeepEvents(&Event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1)
+		if (ret >= 0)
 		{
-			switch (Event.type)
-			{
-			case SDL_QUIT:
-				ret = -1;
-				break;
-			case SDL_KEYUP:
-				if (Event.key.keysym.sym == SDLK_SPACE)
-				{
-					if (m_Sdl.IsPause())
-						Play();
-					else
-						Pause();
-				}
-				break;
-			default:
-				break;
-			}
+			if (n_func) n_func(Frame);
 		}
 
+		av_frame_free(&Frame);
+
 		return ret;
+	}
+
+	void IPlayer::Release()
+	{
+		m_nFrameDuration = 40;
 	}
 
 }

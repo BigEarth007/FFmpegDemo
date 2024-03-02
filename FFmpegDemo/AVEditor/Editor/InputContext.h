@@ -21,6 +21,6 @@ namespace aveditor
 		// Equal CreateDecoder + CreateEncoder
 		virtual void CreateTranscoder(FFormatContext& n_OutputContext);
 
-		virtual CPlayer* CreatePlayer();
+		virtual IPlayer* CreatePlayer(IPlayer* n_Player = nullptr);
 	};
 }

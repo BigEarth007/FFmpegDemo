@@ -7,50 +7,41 @@
 
 namespace aveditor
 {
-	class AVEDITOR_API CPlayer : public IStage
+	enum class EPlayState
+	{
+		EPS_Play = 0,
+		EPS_Pause,
+		EPS_Stop
+	};
+
+	class AVEDITOR_API IPlayer : public IStage
 	{
 	public:
-		CPlayer(FCache& n_Cache, const int& n_nPrefix);
-		~CPlayer();
+		IPlayer(FCache& n_Cache, const int& n_nPrefix);
+		virtual ~IPlayer();
 
-		void Init(const unsigned int n_nFlags,
+		virtual void Init(const unsigned int n_nFlags,
 			const unsigned int n_nFrameDuration);
 
-		void InitAudio(AVCodecContext* n_CodecContext);
+		virtual void Start();
+		virtual void Play();
+		virtual void Pause();
 
-		void InitVideo(const char* n_szTitle, const int n_nWidth,
-			const int n_nHeight, const unsigned int n_nFlags);
-
-		void InitVideo(const void* n_WinId);
-
-		void Play();
-		void Pause();
-
+		virtual int OnEvent();
 		virtual void Run();
 
-		void Release();
+		virtual void VideoFrameArrived(const AVFrame* n_Frame);
+		int GetAudioFrame(std::function<void(const AVFrame*)> n_func);
+
+		virtual void Release();
 
 	protected:
-		// Audio callback
-		static void AudioCallback(void* n_UserData,
-			unsigned char* n_nStream, int n_nLen);
-
-		// Audio callback proc
-		void AudioProc(unsigned char* n_nStream, int n_nLen);
-
-		// Sdl Event
-		int SdlEvent();
-
-	protected:
-		// Sdl object
-		FSdl	m_Sdl;
-
 		CQueueItem*		m_qAudio = nullptr;
-
-		// Output codec context
-		AVCodecContext* m_CodecContext = nullptr;
 
 		// Duration between two frames
 		int				m_nFrameDuration = 40;
+
+		// Play state
+		EPlayState		m_eState = EPlayState::EPS_Stop;
 	};
 }

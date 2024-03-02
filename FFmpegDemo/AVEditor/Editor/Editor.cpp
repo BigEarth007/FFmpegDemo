@@ -176,14 +176,14 @@ namespace aveditor
 		JoinEdit();
 	}
 
-	CPlayer* CEditor::CreatePlayer()
+	IPlayer* CEditor::CreatePlayer(IPlayer* n_Player)
 	{
 		ThrowExceptionExpr(m_vInputContext.size() == 0, "No input context.\n");
 
 		CreateDemuxer();
 		CreateDecoder();
 
-		CPlayer* Player = m_vInputContext[0]->CreatePlayer();
+		IPlayer* Player = m_vInputContext[0]->CreatePlayer(n_Player);
 
 		Player->SetFinishedCallback([this]() {
 			StopEdit();

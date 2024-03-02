@@ -119,6 +119,7 @@ void MixAudio()
 }
 
 // Play video, just for test, do not be care
+// You can inherit IPlayer class to define your player
 void Play()
 {
 	try
@@ -141,7 +142,8 @@ void Play()
 		AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::EST_Audio);
 		aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S32;
 
-		CPlayer* Player = Editor.CreatePlayer();
+		// If parameter is nullptr(default), it will instance CSDLPlayer object
+		CSDLPlayer* Player = (CSDLPlayer*)Editor.CreatePlayer();
 		Player->InitAudio(aoCodec);
 
 		Player->SetStartupCallback([&Player, &vCodec]() {

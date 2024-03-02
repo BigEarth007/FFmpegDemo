@@ -41,7 +41,7 @@ namespace aveditor
 
 		virtual void Run();
 
-		virtual CPlayer* CreatePlayer();
+		virtual IPlayer* CreatePlayer(IPlayer* n_Player = nullptr);
 
 		void SetMaxCacheSize(int n_nIndex, unsigned int n_nMaxCacheSize);
 

@@ -7,17 +7,23 @@ namespace aveditor
 	IStage::IStage(FCache& n_Cache, const int& n_nPrefix,
 		const EStreamType& n_eStreamType)
 	{
+		BaseInit(n_Cache, n_nPrefix, n_eStreamType);
+	}
+
+	IStage::~IStage()
+	{
+
+	}
+
+	void IStage::BaseInit(FCache& n_Cache, const int& n_nPrefix, 
+		const EStreamType& n_eStreamType)
+	{
 		m_Cache = &n_Cache;
 		m_nCurrentPrefix = n_nPrefix;
 		m_eStreamType = n_eStreamType;
 
 		m_nPreviousPrefix = m_Cache->GetPreviousKeyPrefix(
 			m_nCurrentPrefix + (int)m_eStreamType);
-	}
-
-	IStage::~IStage()
-	{
-
 	}
 
 	int IStage::GetContextIndex()

@@ -160,7 +160,7 @@ namespace aveditor
 		}
 	}
 
-	CPlayer* CInputContext::CreatePlayer()
+	IPlayer* CInputContext::CreatePlayer(IPlayer* n_Player)
 	{
 		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
 		int nPrefix = m_Cache->CreateCache(EStage::ES_Decode, m_nContextIndex);
@@ -170,12 +170,20 @@ namespace aveditor
 		if (Stream)
 			nFrameDuration = 1000 / Stream->avg_frame_rate.num;
 
-		CPlayer* Player = new CPlayer(*m_Cache, nPrefix);
-		Player->Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO, nFrameDuration);
+		if (!n_Player)
+		{
+			CSDLPlayer* Player = new CSDLPlayer(*m_Cache, nPrefix);
+			Player->Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO, nFrameDuration);
+			n_Player = Player;
+		}
+		else
+		{
+			n_Player->BaseInit(*m_Cache, nPrefix, EStreamType::EST_Max);
+		}
 
-		m_vStages->emplace_back(Player);
+		m_vStages->emplace_back(n_Player);
 
-		return Player;
+		return n_Player;
 	}
 
 }
