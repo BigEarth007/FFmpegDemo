@@ -58,7 +58,8 @@ namespace aveditor
 
 		while (!IsStop() && qVideo && m_eState != EPlayState::EPS_Stop)
 		{
-			if (ret < OnEvent()) break;
+			if (OnEvent() < 0) break;
+			
 			if (m_eState == EPlayState::EPS_Pause)
 			{
 				Sleep(kSleepDelay);
