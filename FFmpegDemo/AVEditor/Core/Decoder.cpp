@@ -90,13 +90,10 @@ namespace aveditor
 		if (Frame)
 		{
 			int ret2 = m_Convert.Process(Frame, n_nCurrentKey);
-
-			if (0 == ret2) FinishedConvert(Frame, n_nCurrentKey);
-			else av_frame_free(&Frame);
+			if (0 != ret2) av_frame_free(&Frame);
 		}
 		else
 		{
-			FinishedConvert(Frame, n_nCurrentKey);
 			ret = AVERROR_EOF;
 		}
 
@@ -141,8 +138,6 @@ namespace aveditor
 				//LogInfo("Decode frame: %d, Pts: %lld.\n", n_nCurrentKey, n_Frame->pts);
 				n_Frame->pts = n_Frame->best_effort_timestamp;
 				int ret = m_Convert.Process(n_Frame, n_nCurrentKey);
-
-				if (0 == ret) ret = FinishedConvert(n_Frame, n_nCurrentKey);
 
 				return ret;
 			});

@@ -21,18 +21,18 @@ namespace aveditor
 		void SelectSection(const double n_dStart, const double n_dDuration = 0);
 
 		// Write Frame data into this empty input file
-		// if n_Data is nullptr, then write the last frame
-		void WriteVideoFrame(const uint8_t** n_Data = nullptr, 
-			const int* n_LineSize = nullptr, const int& n_nRows = 0);
-
-		// Write Frame data into this empty input file
-		// if n_Data is nullptr, then write the last frame
-		void WriteAudioFrame(const uint8_t** n_Data = nullptr,
-			const int* n_LineSize = nullptr, const int& n_nRows = 0);
+		// if n_Data is nullptr, then write nullptr frame
+		void WriteFrameDatas(EStreamType n_eStreamType, 
+			const void* n_Data, const int& n_nSize);
 
 		virtual void Run();
+		virtual void Stop();
 
 	protected:
+		AVFrame* WriteVideoFrame(AVCodecContext* n_CodecContext, 
+			const void* n_Data, const int& n_nSize);
+		AVFrame* WriteAudioFrame(AVCodecContext* n_CodecContext, 
+			const void* n_Data, const int& n_nSize);
 		/* Set the duration of this input context */
 		void SetDuration();
 

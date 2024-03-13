@@ -37,77 +37,37 @@ namespace aveditor
 		}
 	}
 
-	void CDemuxer::WriteVideoFrame(const uint8_t** n_Data, 
-		const int* n_LineSize, const int& n_nRows)
+	void CDemuxer::WriteFrameDatas(EStreamType n_eStreamType, 
+		const void* n_Data, const int& n_nSize)
 	{
 		if (!m_InputContext) return;
 
-		int nKey = m_nCurrentPrefix + (int)EStreamType::EST_Video;
-		CQueueItem* QueueItem = m_Cache->GetBufferQueue(nKey); 
-		if (!QueueItem) return;
-
-		if (!n_Data || !n_LineSize)
-		{
-			QueueItem->Push((AVFrame*)nullptr);
-			return;
-		}
-
-		AVCodecContext* CodecContext = 
-			m_InputContext->GetCodecContext(EStreamType::EST_Video);
-		if (!CodecContext) return;
-
-		AVFrame* Frame = FFrame::VideoFrame(CodecContext->width,
-			CodecContext->height, CodecContext->pix_fmt);
-
-		if (Frame)
-		{
-			for (int i = 0; i < n_nRows; i++)
-			{
-				memcpy_s(Frame->data[i], Frame->linesize[i], 
-					n_Data[i], n_LineSize[i]);
-			}
-
-			Frame->duration = 1;
-			Frame->pts = m_nVideoFrameIndex++;
-			QueueItem->Push(Frame);
-		}
-	}
-
-	void CDemuxer::WriteAudioFrame(const uint8_t** n_Data /*= nullptr*/, 
-		const int* n_LineSize /*= nullptr*/, const int& n_nRows /*= 0*/)
-	{
-		if (!m_InputContext) return;
-
-		int nKey = m_nCurrentPrefix + (int)EStreamType::EST_Audio;
+		int nKey = m_nCurrentPrefix + (int)n_eStreamType;
 		CQueueItem* QueueItem = m_Cache->GetBufferQueue(nKey);
 		if (!QueueItem) return;
 
-		if (!n_Data || !n_LineSize)
+		if (!n_Data || n_nSize == 0)
 		{
 			QueueItem->Push((AVFrame*)nullptr);
 			return;
 		}
 
 		AVCodecContext* CodecContext =
-			m_InputContext->GetCodecContext(EStreamType::EST_Audio);
+			m_InputContext->GetCodecContext(n_eStreamType);
 		if (!CodecContext) return;
 
-		AVFrame* Frame = FFrame::AudioFrame(
-			CodecContext->frame_size, CodecContext->sample_rate, 
-			CodecContext->sample_fmt, &CodecContext->ch_layout);
+		AVFrame* Frame = nullptr;
 
-		if (Frame)
+		if (n_eStreamType == EStreamType::EST_Video)
 		{
-			for (int i = 0; i < n_nRows; i++)
-			{
-				memcpy_s(Frame->data[i], Frame->linesize[i],
-					n_Data[i], n_LineSize[i]);
-			}
-
-			Frame->pts = m_nAudioFramePts;
-			m_nAudioFramePts += Frame->nb_samples;
-			QueueItem->Push(Frame);
+			Frame = WriteVideoFrame(CodecContext, n_Data, n_nSize);
 		}
+		else if (n_eStreamType == EStreamType::EST_Audio)
+		{
+			Frame = WriteAudioFrame(CodecContext, n_Data, n_nSize);
+		}
+
+		if (Frame) QueueItem->Push(Frame);
 	}
 
 	void CDemuxer::Run()
@@ -222,6 +182,63 @@ namespace aveditor
 			avformat_close_input(&m_InputContext->m_Context);
 
 		Thread::Run();
+	}
+
+	void CDemuxer::Stop()
+	{
+		if (m_InputContext && !m_InputContext->m_Context)
+		{
+			// If it's an empty input file, then auto write the end frame
+			auto& vContextInfo = m_Cache->GetContextInfos();
+			int	  nContextIndex = GetContextIndex();
+
+			for (int i = 0; i < (int)EStreamType::EST_Max; i++)
+			{
+				if (vContextInfo[nContextIndex].nStreams[i] != -1)
+				{
+					WriteFrameDatas((EStreamType)i, nullptr, 0);
+				}
+			}
+		}
+
+		Thread::Stop();
+	}
+
+	AVFrame* CDemuxer::WriteVideoFrame(AVCodecContext* n_CodecContext, 
+		const void* n_Data, const int& n_nSize)
+	{
+		AVFrame* Frame = FFrame::VideoFrame(n_CodecContext->width,
+			n_CodecContext->height, n_CodecContext->pix_fmt);
+
+		if (Frame)
+		{
+			memcpy_s(Frame->data[0], Frame->linesize[0],
+				n_Data, n_nSize);
+
+			Frame->duration = 1;
+			Frame->pts = m_nVideoFrameIndex++;
+		}
+
+		return Frame;
+	}
+
+	AVFrame* CDemuxer::WriteAudioFrame(AVCodecContext* n_CodecContext,
+		const void* n_Data, const int& n_nSize)
+	{
+		AVFrame* Frame = FFrame::AudioFrame(
+			n_CodecContext->frame_size, n_CodecContext->sample_rate,
+			n_CodecContext->sample_fmt, &n_CodecContext->ch_layout);
+
+		if (Frame)
+		{
+			memcpy_s(Frame->data[0], Frame->linesize[0],
+				n_Data, n_nSize);
+
+			Frame->pts = m_nAudioFramePts;
+			m_nAudioFramePts += Frame->nb_samples;
+		}
+
+		return Frame;
 	}
 
 	void CDemuxer::SetDuration()

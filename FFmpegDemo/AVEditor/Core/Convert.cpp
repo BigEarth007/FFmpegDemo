@@ -25,10 +25,13 @@ namespace aveditor
 
 	int CConvert::Process(AVFrame* n_Frame, const int& n_nKey)
 	{
-		if (!m_Cale.m_Context && 
-			!m_Resample.m_Context && 
+		if (!m_Cale.m_Context &&
+			!m_Resample.m_Context &&
 			!m_AudioFifo.m_Context)
+		{
+			FinishedConvert(n_Frame, n_nKey);
 			return 0;
+		}
 
 		VideoFrame(n_Frame, n_nKey);
 		AudioFrame(n_Frame, n_nKey);
