@@ -22,9 +22,12 @@ namespace aveditor
 	{
 		m_Context.Release();
 
-		m_Context.OpenInputFile(n_sFileName, n_InputFormat, n_Options);
-		m_Context.GetInputCodecContext();
-		m_Context.OpenCodecContext();
+		if (!n_sFileName.empty())
+		{
+			m_Context.OpenInputFile(n_sFileName, n_InputFormat, n_Options);
+			m_Context.GetInputCodecContext();
+			m_Context.OpenCodecContext();
+		}
 
 		return m_Context;
 	}
@@ -34,12 +37,16 @@ namespace aveditor
 		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
 		if (!ContextInfo) return nullptr;
 
+		EItemType ItemType = EItemType::EIT_Packet;
+		// For empty input file, no packet can be read
+		if (!m_Context.m_Context) ItemType = EItemType::EIT_Frame;
+
 		for (int i = 0; i < (int)EStreamType::EST_Max; i++)
 		{
 			if (ContextInfo->nStreams[i] == -1) continue;
 
 			m_Cache->CreateCache(EStage::ES_Demux,
-				EItemType::EIT_Packet, m_nContextIndex, (EStreamType)i);
+				ItemType, m_nContextIndex, (EStreamType)i);
 		}
 
 		int nPrefix = StageToPrefix(EStage::ES_Demux, m_nContextIndex);

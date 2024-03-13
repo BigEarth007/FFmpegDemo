@@ -303,7 +303,7 @@ namespace aveditor
 
 	void FCache::DebugBufferQueue()
 	{
-#if _DEBUG
+#ifdef _DEBUG
 		for (auto itr = m_Buffer.begin(); itr != m_Buffer.end(); itr++)
 		{
 			LogInfo("Queue: %d ----> size: %zd.\n", itr->first, itr->second->Size());

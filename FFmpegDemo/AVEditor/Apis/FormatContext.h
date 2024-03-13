@@ -58,9 +58,13 @@ namespace aveditor
 		AVCodecContext* GetCodecContext(EStreamType n_eStreamType);
 
 		// Build encode codec context
-		FCodecContext* BuildCodecContext(AVCodecID n_eCodecID, 
+		FCodecContext* BuildEncodeCodecContext(AVCodecID n_eCodecID, 
 			AVCodecContext* n_InputCodecContext);
-		FCodecContext* BuildCodecContext(AVStream* n_Stream);
+		FCodecContext* BuildEncodeCodecContext(AVStream* n_Stream);
+		// Create decode codec context
+		// For empty input file, the codec context should be generate manual
+		FCodecContext* BuildDecodeCodecContext(EStreamType n_eStreamType,
+			AVCodecID n_eCodecID);
 		// Check if supports B-Frame
 		bool IsSupportBFrame();
 		// Open codec context; 

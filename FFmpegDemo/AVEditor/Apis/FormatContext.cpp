@@ -133,25 +133,25 @@ namespace aveditor
 				InputStream->codecpar->codec_id == m_Context->oformat->audio_codec ||
 				InputStream->codecpar->codec_id == m_Context->oformat->subtitle_codec)
 			{
-				BuildCodecContext(InputStream);
+				BuildEncodeCodecContext(InputStream);
 			}
 			else if (InputStream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO)
 			{
 				if (m_Context->oformat->video_codec == AVCodecID::AV_CODEC_ID_NONE)
 					continue;
-				BuildCodecContext(m_Context->oformat->video_codec, InputCodecContext);
+				BuildEncodeCodecContext(m_Context->oformat->video_codec, InputCodecContext);
 			}
 			else if (InputStream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
 			{
 				if (m_Context->oformat->audio_codec == AVCodecID::AV_CODEC_ID_NONE)
 					continue;
-				BuildCodecContext(m_Context->oformat->audio_codec, InputCodecContext);
+				BuildEncodeCodecContext(m_Context->oformat->audio_codec, InputCodecContext);
 			}
 			else if (InputStream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_SUBTITLE)
 			{
 				if (m_Context->oformat->subtitle_codec == AVCodecID::AV_CODEC_ID_NONE)
 					continue;
-				BuildCodecContext(m_Context->oformat->subtitle_codec, InputCodecContext);
+				BuildEncodeCodecContext(m_Context->oformat->subtitle_codec, InputCodecContext);
 			}
 
 			m_mCodecContext[eStreamType].CopyAdditionParameter(InputStream);
@@ -278,15 +278,15 @@ namespace aveditor
 
 		if (m_Context->oformat->video_codec != AVCodecID::AV_CODEC_ID_NONE)
 		{
-			BuildCodecContext(m_Context->oformat->video_codec, nullptr);
+			BuildEncodeCodecContext(m_Context->oformat->video_codec, nullptr);
 		}
 		if (m_Context->oformat->audio_codec != AVCodecID::AV_CODEC_ID_NONE)
 		{
-			BuildCodecContext(m_Context->oformat->audio_codec, nullptr);
+			BuildEncodeCodecContext(m_Context->oformat->audio_codec, nullptr);
 		}
 		if (m_Context->oformat->subtitle_codec != AVCodecID::AV_CODEC_ID_NONE)
 		{
-			BuildCodecContext(m_Context->oformat->subtitle_codec, nullptr);
+			BuildEncodeCodecContext(m_Context->oformat->subtitle_codec, nullptr);
 		}
 
 		return &m_mCodecContext;
@@ -306,7 +306,7 @@ namespace aveditor
 		return nullptr;
 	}
 
-	FCodecContext* FFormatContext::BuildCodecContext(AVCodecID n_eCodecID,
+	FCodecContext* FFormatContext::BuildEncodeCodecContext(AVCodecID n_eCodecID,
 		AVCodecContext* n_InputCodecContext)
 	{
 		const AVCodec* Codec = FCodecContext::FindEncodeCodec(n_eCodecID);
@@ -340,7 +340,7 @@ namespace aveditor
 		return &m_mCodecContext[eStreamType];
 	}
 
-	FCodecContext* FFormatContext::BuildCodecContext(AVStream* n_Stream)
+	FCodecContext* FFormatContext::BuildEncodeCodecContext(AVStream* n_Stream)
 	{
 		const AVCodec* Codec = FCodecContext::FindEncodeCodec(n_Stream->codecpar->codec_id);
 
@@ -353,6 +353,21 @@ namespace aveditor
 		CodecContextAddition(ctx);
 
 		return &m_mCodecContext[eStreamType];
+	}
+
+	FCodecContext* FFormatContext::BuildDecodeCodecContext(EStreamType n_eStreamType, 
+		AVCodecID n_eCodecID)
+	{
+		auto itr = m_mCodecContext.find(n_eStreamType);
+		if (itr != m_mCodecContext.end())
+		{
+			return &itr->second;
+		}
+
+		const AVCodec* Codec = FCodecContext::FindDecodeCodec(n_eCodecID);
+		m_mCodecContext[n_eStreamType].Alloc(Codec);
+
+		return &m_mCodecContext[n_eStreamType];
 	}
 
 	bool FFormatContext::IsSupportBFrame()

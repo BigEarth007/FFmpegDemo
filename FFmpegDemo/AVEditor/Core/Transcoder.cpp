@@ -44,7 +44,7 @@ namespace aveditor
 
 		while (!IsStop() && QueueItem)
 		{
-			ret = DecodePacket(QueueItem, nKeyCurrent);
+			ret = DoWithQueue(QueueItem, nKeyCurrent);
 			if (ret == AVERROR_EOF) break;
 
 			StageSleep();

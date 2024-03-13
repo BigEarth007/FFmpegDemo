@@ -37,11 +37,86 @@ namespace aveditor
 		}
 	}
 
+	void CDemuxer::WriteVideoFrame(const uint8_t** n_Data, 
+		const int* n_LineSize, const int& n_nRows)
+	{
+		if (!m_InputContext) return;
+
+		int nKey = m_nCurrentPrefix + (int)EStreamType::EST_Video;
+		CQueueItem* QueueItem = m_Cache->GetBufferQueue(nKey); 
+		if (!QueueItem) return;
+
+		if (!n_Data || !n_LineSize)
+		{
+			QueueItem->Push((AVFrame*)nullptr);
+			return;
+		}
+
+		AVCodecContext* CodecContext = 
+			m_InputContext->GetCodecContext(EStreamType::EST_Video);
+		if (!CodecContext) return;
+
+		AVFrame* Frame = FFrame::VideoFrame(CodecContext->width,
+			CodecContext->height, CodecContext->pix_fmt);
+
+		if (Frame)
+		{
+			for (int i = 0; i < n_nRows; i++)
+			{
+				memcpy_s(Frame->data[i], Frame->linesize[i], 
+					n_Data[i], n_LineSize[i]);
+			}
+
+			Frame->duration = 1;
+			Frame->pts = m_nVideoFrameIndex++;
+			QueueItem->Push(Frame);
+		}
+	}
+
+	void CDemuxer::WriteAudioFrame(const uint8_t** n_Data /*= nullptr*/, 
+		const int* n_LineSize /*= nullptr*/, const int& n_nRows /*= 0*/)
+	{
+		if (!m_InputContext) return;
+
+		int nKey = m_nCurrentPrefix + (int)EStreamType::EST_Audio;
+		CQueueItem* QueueItem = m_Cache->GetBufferQueue(nKey);
+		if (!QueueItem) return;
+
+		if (!n_Data || !n_LineSize)
+		{
+			QueueItem->Push((AVFrame*)nullptr);
+			return;
+		}
+
+		AVCodecContext* CodecContext =
+			m_InputContext->GetCodecContext(EStreamType::EST_Audio);
+		if (!CodecContext) return;
+
+		AVFrame* Frame = FFrame::AudioFrame(
+			CodecContext->frame_size, CodecContext->sample_rate, 
+			CodecContext->sample_fmt, &CodecContext->ch_layout);
+
+		if (Frame)
+		{
+			for (int i = 0; i < n_nRows; i++)
+			{
+				memcpy_s(Frame->data[i], Frame->linesize[i],
+					n_Data[i], n_LineSize[i]);
+			}
+
+			Frame->pts = m_nAudioFramePts;
+			m_nAudioFramePts += Frame->nb_samples;
+			QueueItem->Push(Frame);
+		}
+	}
+
 	void CDemuxer::Run()
 	{
 		ThrowExceptionExpr(!m_InputContext, 
 			"You should call function Init() first.\n");
 		ThrowExceptionExpr(!m_Cache, "Invalid buffer.\n");
+
+		if (!m_InputContext->m_Context) return;
 
 		int			ret = 0;
 		int			nKey = 0;

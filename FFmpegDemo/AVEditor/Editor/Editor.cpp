@@ -36,23 +36,37 @@ namespace aveditor
 		FContextInfo ContextInfo;
 		ContextInfo.eJob = n_eJob;
 
-		AVStream* Stream = nullptr;
-
-		for (unsigned int i = 0, j = 0; i < Input.m_Context->nb_streams; i++)
+		if (Input.m_Context)
 		{
-			Stream = Input.m_Context->streams[i];
-			if (Stream->codecpar->codec_type != AVMediaType::AVMEDIA_TYPE_UNKNOWN &&
-				Stream->codecpar->codec_id != AVCodecID::AV_CODEC_ID_NONE)
+			// It's a valid input file
+			AVStream* Stream = nullptr;
+
+			for (unsigned int i = 0, j = 0; i < Input.m_Context->nb_streams; i++)
 			{
-				EStreamType eStreamType = kStreamIndex.at(
-					Stream->codecpar->codec_type);
-				if (n_nStream & (1 << (int)eStreamType))
+				Stream = Input.m_Context->streams[i];
+				if (Stream->codecpar->codec_type != AVMediaType::AVMEDIA_TYPE_UNKNOWN &&
+					Stream->codecpar->codec_id != AVCodecID::AV_CODEC_ID_NONE)
 				{
-					// The stream index of context should start from 0, but the 
-					// index of stream that we need may not start from 0. 
-					// For example, detach audio stream from input context, 
-					// and then write into output context
-					ContextInfo.nStreams[(int)eStreamType] = j++;
+					EStreamType eStreamType = kStreamIndex.at(
+						Stream->codecpar->codec_type);
+					if (n_nStream & (1 << (int)eStreamType))
+					{
+						// The stream index of context should start from 0, but the 
+						// index of stream that we need may not start from 0. 
+						// For example, detach audio stream from input context, 
+						// and then write into output context
+						ContextInfo.nStreams[(int)eStreamType] = j++;
+					}
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < (int)EStreamType::EST_Max; i++)
+			{
+				if (n_nStream & (1 << i))
+				{
+					ContextInfo.nStreams[i] = i;
 				}
 			}
 		}

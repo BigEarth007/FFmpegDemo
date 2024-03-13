@@ -9,12 +9,15 @@ namespace aveditor
 		CEditor();
 		virtual ~CEditor();
 
+		// Add an input file, if n_sFileName == "", then add an empty input file
+		// For empty input file, it can record PCM data, and writes into output file
 		FFormatContext& OpenInputFile(const std::string& n_sFileName,
 			const EJob n_eJob = EJob::EJ_Normal,
 			const int& n_nStream = kStreamAll,
 			const AVInputFormat* n_InputFormat = nullptr, 
 			AVDictionary* n_Options = nullptr);
 
+		// Create an output file
 		FFormatContext& AllocOutputFile(const std::string& n_sFileName,
 			const AVOutputFormat* n_OutputFormat = nullptr,
 			const char* n_szFormatName = nullptr);

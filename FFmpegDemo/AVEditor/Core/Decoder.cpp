@@ -44,7 +44,7 @@ namespace aveditor
 
 		while (!IsStop() && QueueItem)
 		{
-			ret = DecodePacket(QueueItem, nKeyCurrent);
+			ret = DoWithQueue(QueueItem, nKeyCurrent);
 			if (ret == AVERROR_EOF) break;
 
 			StageSleep();
@@ -62,6 +62,45 @@ namespace aveditor
 		m_OutputCodecContext = nullptr;
 
 		m_Convert.Release();
+	}
+
+	int CDecoder::DoWithQueue(CQueueItem* n_QueueItem, const int n_nCurrentKey)
+	{
+		int ret = 0;
+
+		if (m_InputCodecContext->m_Context)
+			ret = DecodePacket(n_QueueItem, n_nCurrentKey);
+		else
+			ret = CoverFrame(n_QueueItem, n_nCurrentKey);
+
+		return ret;
+	}
+
+	int CDecoder::CoverFrame(CQueueItem* n_QueueItem, const int n_nCurrentKey)
+	{
+		AVFrame* Frame = nullptr;
+
+		int ret = m_Cache->Pop(n_QueueItem, Frame);
+		if (ret < 0)
+		{
+			Sleep(kSleepDelay);
+			return ret;
+		}
+
+		if (Frame)
+		{
+			int ret2 = m_Convert.Process(Frame, n_nCurrentKey);
+
+			if (0 == ret2) FinishedConvert(Frame, n_nCurrentKey);
+			else av_frame_free(&Frame);
+		}
+		else
+		{
+			FinishedConvert(Frame, n_nCurrentKey);
+			ret = AVERROR_EOF;
+		}
+
+		return ret;
 	}
 
 	int CDecoder::DecodePacket(CQueueItem* n_QueueItem, const int n_nCurrentKey)
