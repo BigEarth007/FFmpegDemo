@@ -37,7 +37,19 @@ namespace aveditor
 		}
 	}
 
-	void CDemuxer::WriteFrameDatas(EStreamType n_eStreamType, 
+	void CDemuxer::SetCallbackFillVideoFrame(
+		std::function<void(AVFrame*, const void*, const int&)> n_func)
+	{
+		m_funcFillVideoFrame = n_func;
+	}
+
+	void CDemuxer::SetCallbackFillAudioFrame(
+		std::function<void(AVFrame*, const void*, const int&)> n_func)
+	{
+		m_funcFillAudioFrame = n_func;
+	}
+
+	void CDemuxer::WriteFrameDatas(EStreamType n_eStreamType,
 		const void* n_Data, const int& n_nSize)
 	{
 		if (!m_InputContext) return;
@@ -209,11 +221,11 @@ namespace aveditor
 	{
 		AVFrame* Frame = FFrame::VideoFrame(n_CodecContext->width,
 			n_CodecContext->height, n_CodecContext->pix_fmt);
-
+		
 		if (Frame)
 		{
-			memcpy_s(Frame->data[0], Frame->linesize[0],
-				n_Data, n_nSize);
+			if (m_funcFillVideoFrame)
+				m_funcFillVideoFrame(Frame, n_Data, n_nSize);
 
 			Frame->duration = 1;
 			Frame->pts = m_nVideoFrameIndex++;
@@ -231,8 +243,8 @@ namespace aveditor
 
 		if (Frame)
 		{
-			memcpy_s(Frame->data[0], Frame->linesize[0],
-				n_Data, n_nSize);
+			if (m_funcFillAudioFrame)
+				m_funcFillAudioFrame(Frame, n_Data, n_nSize);
 
 			Frame->pts = m_nAudioFramePts;
 			m_nAudioFramePts += Frame->nb_samples;

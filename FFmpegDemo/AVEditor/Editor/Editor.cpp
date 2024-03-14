@@ -113,13 +113,26 @@ namespace aveditor
 		return m_Cache;
 	}
 
+	void CEditor::WriteFrameDatas(EStreamType n_eStreamType, 
+		const void* n_Data, const int& n_nSize, const int& n_nContextIndex /*= 0*/)
+	{
+		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
+			"Invalid parameter.\n");
+
+		CDemuxer* Demuxer = (CDemuxer*)m_Cache.GetContextInfo(n_nContextIndex)->Demuxer;
+		if (Demuxer)
+		{
+			Demuxer->WriteFrameDatas(n_eStreamType, n_Data, n_nSize);
+		}
+	}
+
 	void CEditor::CreateDemuxer()
 	{
 		std::vector<FContextInfo>& vContextInfos = m_Cache.GetContextInfos();
 		for (size_t i = 0; i < m_vInputContext.size(); i++)
 		{
 			CDemuxer* Muxer = m_vInputContext[i]->CreateDemuxer(m_OutputContext.GetContext());
-			vContextInfos[i].Muxer = Muxer;
+			vContextInfos[i].Demuxer = Muxer;
 		}
 	}
 

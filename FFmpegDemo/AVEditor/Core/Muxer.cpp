@@ -56,7 +56,7 @@ namespace aveditor
 	{
 		int			ret = 0;
 		// Current key of current stream index
-		int			nCurKey = 0;
+		int			nKey = 0;
 		// Number of stream type that have finished
 		int			nCount = 0;
 		// The stream type which got the packet with min timestamp
@@ -75,9 +75,9 @@ namespace aveditor
 				m_OutputContext->GetCodecContextTimeBase((EStreamType)i);
 			PacketCaches[i].dTimebase = av_q2d(Timebase);
 
-			int nKey = m_nPreviousPrefix + n_nIndex * kEditorIndexFactor + i;
-			nCurKey = m_Cache->GetPreviousKeyPrefix(nKey) + i;
-			PacketCaches[i].QueueItem = m_Cache->GetBufferQueue(nCurKey);
+			nKey = m_nCurrentPrefix + n_nIndex * kEditorIndexFactor + i;
+			nKey = m_Cache->GetPreviousKeyPrefix(nKey) + i;
+			PacketCaches[i].QueueItem = m_Cache->GetBufferQueue(nKey);
 		}
 
 		while (!IsStop())

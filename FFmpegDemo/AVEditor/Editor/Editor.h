@@ -29,6 +29,12 @@ namespace aveditor
 		FFormatContext& GetOutputContext();
 		FCache& GetCache();
 
+		// Write Frame data into this empty input file
+		// if n_Data is nullptr, then write nullptr frame
+		void WriteFrameDatas(EStreamType n_eStreamType,
+			const void* n_Data, const int& n_nSize, 
+			const int& n_nContextIndex = 0);
+
 		virtual void CreateDemuxer();
 
 		virtual void CreateDecoder();

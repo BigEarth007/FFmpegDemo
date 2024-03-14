@@ -18,7 +18,7 @@ namespace aveditor
 		int		nStreams[(int)EStreamType::EST_Max] = { -1, -1, -1 };
 
 		// Point to CDemuxer object of this input context
-		void*	Muxer = nullptr;
+		void*	Demuxer = nullptr;
 		// Index of the input filter context
 		unsigned int nFilterIndex = 0;
 

@@ -326,8 +326,42 @@ namespace aveditor
 		return ret;
 	}
 
+	int FCodecContext::GetPixFmtPlaneCount()
+	{
+		if (m_Context->codec->type == AVMediaType::AVMEDIA_TYPE_VIDEO)
+			return av_pix_fmt_count_planes(m_Context->pix_fmt);
+
+		return 0;
+	}
+
+	int FCodecContext::IsSampleFmtPlanar()
+	{
+		if (m_Context->codec->type == AVMediaType::AVMEDIA_TYPE_AUDIO)
+			return av_sample_fmt_is_planar(m_Context->sample_fmt);
+
+		return 0;
+	}
+
+	int FCodecContext::GetBytesPerSample()
+	{
+		if (m_Context->codec->type == AVMediaType::AVMEDIA_TYPE_AUDIO)
+			return av_get_bytes_per_sample(m_Context->sample_fmt);
+
+		return 0;
+	}
 
 	//////////////////////////////////////////////////////////////////////
+
+	AVEDITOR_API int GetPixFmtPlaneCount(AVPixelFormat n_ePixelFormat)
+	{
+		return av_pix_fmt_count_planes(n_ePixelFormat);
+	}
+
+	AVEDITOR_API int IsSampleFmtPlanar(AVSampleFormat n_eSampleFormat)
+	{
+		return av_sample_fmt_is_planar(n_eSampleFormat);
+	}
+
 	AVEDITOR_API int GetBytesPerSample(AVSampleFormat n_eSampleFormat)
 	{
 		return av_get_bytes_per_sample(n_eSampleFormat);
@@ -350,4 +384,5 @@ namespace aveditor
 
 		return CodecContext;
 	}
+
 }

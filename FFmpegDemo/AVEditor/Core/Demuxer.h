@@ -20,6 +20,13 @@ namespace aveditor
 		// const double n_dDuration: time duration, 0 means to the end
 		void SelectSection(const double n_dStart, const double n_dDuration = 0);
 
+		// Set the callback function to fill data buffer of video AVFrame
+		void SetCallbackFillVideoFrame(
+			std::function<void(AVFrame*, const void*, const int&)> n_func);
+		// Set the callback function to fill data buffer of audio AVFrame
+		void SetCallbackFillAudioFrame(
+			std::function<void(AVFrame*, const void*, const int&)> n_func);
+
 		// Write Frame data into this empty input file
 		// if n_Data is nullptr, then write nullptr frame
 		void WriteFrameDatas(EStreamType n_eStreamType, 
@@ -51,5 +58,9 @@ namespace aveditor
 		int64_t			m_nVideoFrameIndex = 0;
 		// Pts of audio frame
 		int64_t			m_nAudioFramePts = 0;
+
+		// Callback function for fill AVFrame data buffer
+		std::function<void(AVFrame*, const void*, const int&)> m_funcFillVideoFrame = nullptr;
+		std::function<void(AVFrame*, const void*, const int&)> m_funcFillAudioFrame = nullptr;
 	};
 }

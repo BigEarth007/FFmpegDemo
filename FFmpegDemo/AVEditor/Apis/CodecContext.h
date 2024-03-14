@@ -53,6 +53,15 @@ namespace aveditor
 		int EncodeFrame(const AVFrame* n_Frame,
 			std::function<int(AVPacket* n_Packet)> n_Func);
 
+		// Video: Get number of planes by pixel format
+		int GetPixFmtPlaneCount();
+
+		// Audio: Check if the sample format is planar.
+		int IsSampleFmtPlanar();
+
+		// Audio: number of bytes per sample
+		int GetBytesPerSample();
+
 		AVCodecContext* m_Context = nullptr;
 
 	protected:
@@ -64,7 +73,15 @@ namespace aveditor
 	//////////////////////////////////////////////////////////////////////
 	extern "C"
 	{
+		// Video: Get number of planes by pixel format
+		AVEDITOR_API int GetPixFmtPlaneCount(AVPixelFormat n_ePixelFormat);
+
+		// Audio: Check if the sample format is planar.
+		AVEDITOR_API int IsSampleFmtPlanar(AVSampleFormat n_eSampleFormat);
+
+		// Audio: number of bytes per sample
 		AVEDITOR_API int GetBytesPerSample(AVSampleFormat n_eSampleFormat);
+
 		AVEDITOR_API AVCodecContext* CopyCodecContext(
 			const AVCodecContext* n_CodecContext);
 	}
