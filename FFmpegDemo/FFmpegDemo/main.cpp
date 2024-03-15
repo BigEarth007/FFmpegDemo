@@ -18,8 +18,27 @@ void Cover()
 		 
 		FFormatContext& Input = Editor.OpenInputFile("1.mp4");		 
 		FFormatContext& Output = Editor.AllocOutputFile("1.avi");
-		 
+
+#if 1
+		// Set Codecs and streams for output file based on input file
 		Output.BuildAllStreams(Input);
+#else
+		// or you can do like this
+		auto mInput = Input.GetCodecContext();
+		Output.BuildEncodeCodecContext(AVcodecID::AV_CODEC_ID_MPEG4, 
+			mInput->at(EStreamType::EST_Video).m_Context);
+		Output.BuildEncodeCodecContext(AVcodecID::AV_CODEC_ID_MP3, 
+			mInput->at(EStreamType::EST_Audio).m_Context);
+
+		auto mOutput = Output.GetCodecContext();
+		// Modify the parameters of the codec as you need, eg:
+		mOutput->at(EStreamType::EST_Video).m_Context->framerate = { 50, 1 };
+		mOutput->at(EStreamType::EST_Video).m_Context->time_base = { 1, 12800 };
+		
+		Output.BuildStream(mOutput->at(EStreamType::EST_Video));
+		Output.BuildStream(mOutput->at(EStreamType::EST_Audio));
+#endif
+		
 		Editor.OpenOutputFile();
 		 
 		Editor.CreateAllStage();
@@ -195,6 +214,21 @@ void RecordAudio()
 		Editor.CreateAllStage();
 
 		Editor.StartEdit();
+
+		std::thread t([=]() {
+
+			// Record 5 seconds
+			std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+			CDemuxer* Demuxer = (CDemuxer*)Editor.GetCache().GetContextInfo(0)->Demuxer;
+			Demuxer->Stop();
+
+			std::cout << "record over" << std::endl;
+
+			});
+		t.detach();
+		
+		std::cout << "record start" << std::endl;
+		
 		Editor.JoinEdit();
 		// Or you can start a thread to edit video
 		// Editor.Start();
@@ -225,7 +259,7 @@ void RecordPCM()
 
 		// Video Codec Context
 		AVCodecContext* InputVideoCodec = Input.BuildDecodeCodecContext(
-			EStreamType::EST_Video, AVCodecID::AV_CODEC_ID_H264)->m_Context;
+			EStreamType::EST_Video, AVCodecID::AV_CODEC_ID_RAWVIDEO)->m_Context;
 		InputVideoCodec->width = 640;
 		InputVideoCodec->height = 480;
 		InputVideoCodec->bit_rate = 128000;
@@ -237,7 +271,7 @@ void RecordPCM()
 
 		// Audio Codec Context
 		AVCodecContext* InputAudioCodec = Input.BuildDecodeCodecContext(
-			EStreamType::EST_Audio, AVCodecID::AV_CODEC_ID_AAC)->m_Context;
+			EStreamType::EST_Audio, AVCodecID::AV_CODEC_ID_FIRST_AUDIO)->m_Context;
 		InputAudioCodec->bit_rate = 192000;
 		InputAudioCodec->sample_rate = GetSupportedSampleRate(InputAudioCodec->codec, 41000);
 		InputAudioCodec->time_base = { 1, InputAudioCodec->sample_rate };
@@ -249,10 +283,9 @@ void RecordPCM()
 
 		Editor.CreateAllStage();
 
-		CDemuxer* Demuxer = (CDemuxer*)Editor.GetCache().GetContextInfo(0)->Demuxer;
 		// Set callback function to parse PCM data
-		Demuxer->SetCallbackFillVideoFrame(
-			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize) {
+		Editor.SetCallbackFillVideoFrame(
+			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize, 0) {
 
 				int nPlanes = GetPixFmtPlaneCount(InputVideoCodec->pix_fmt);
 
@@ -274,8 +307,8 @@ void RecordPCM()
 				}
 			}
 		);
-		Demuxer->SetCallbackFillAudioFrame(
-			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize) {
+		Editor.SetCallbackFillAudioFrame(
+			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize, 0) {
 
 				int nIsPlanar = IsSampleFmtPlanar(InputAudioCodec->sample_fmt);
 				int nBytesPerSample = GetBytesPerSample(InputAudioCodec->sample_fmt);
@@ -326,12 +359,13 @@ int main()
 	auto start = std::chrono::steady_clock::now();
 	//SetupEditorLog();
 	
-	Cover();
+	//Cover();
 	//Concat();
 	//DetachAudioStream();
 	//MixAudio();
 	//Play();
 	//RecordAudio();
+	//RecordPCM();
 
 	auto end = std::chrono::steady_clock::now();
 	auto tt = end - start;
