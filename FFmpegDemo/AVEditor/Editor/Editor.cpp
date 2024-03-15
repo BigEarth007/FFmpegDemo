@@ -113,6 +113,34 @@ namespace aveditor
 		return m_Cache;
 	}
 
+	void CEditor::SetCallbackFillVideoFrame(
+		std::function<void(AVFrame*, const void*, const int&)> n_func, 
+		const int& n_nContextIndex)
+	{
+		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
+		"Invalid parameter.\n");
+
+		CDemuxer* Demuxer = (CDemuxer*)m_Cache.GetContextInfo(n_nContextIndex)->Demuxer;
+		if (Demuxer)
+		{
+			Demuxer->SetCallbackFillVideoFrame(n_func);
+		}
+	}
+
+	void CEditor::SetCallbackFillAudioFrame(
+		std::function<void(AVFrame*, const void*, const int&)> n_func, 
+		const int& n_nContextIndex)
+	{
+		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
+		"Invalid parameter.\n");
+
+		CDemuxer* Demuxer = (CDemuxer*)m_Cache.GetContextInfo(n_nContextIndex)->Demuxer;
+		if (Demuxer)
+		{
+			Demuxer->SetCallbackFillAudioFrame(n_func);
+		}
+	}
+
 	void CEditor::WriteFrameDatas(EStreamType n_eStreamType, 
 		const void* n_Data, const int& n_nSize, const int& n_nContextIndex /*= 0*/)
 	{
