@@ -29,6 +29,15 @@ namespace aveditor
 		FFormatContext& GetOutputContext();
 		FCache& GetCache();
 
+		// Set the callback function to fill data buffer of video AVFrame
+		void SetCallbackFillVideoFrame(
+			std::function<void(AVFrame*, const void*, const int&)> n_func, 
+			const int& n_nContextIndex = 0);
+		// Set the callback function to fill data buffer of audio AVFrame
+		void SetCallbackFillAudioFrame(
+			std::function<void(AVFrame*, const void*, const int&)> n_func, 
+			const int& n_nContextIndex = 0);
+
 		// Write Frame data into this empty input file
 		// if n_Data is nullptr, then write nullptr frame
 		void WriteFrameDatas(EStreamType n_eStreamType,
