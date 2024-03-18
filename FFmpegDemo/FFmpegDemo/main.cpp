@@ -285,7 +285,7 @@ void RecordPCM()
 
 		// Set callback function to parse PCM data
 		Editor.SetCallbackFillVideoFrame(
-			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize, 0) {
+			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize) {
 
 				int nPlanes = GetPixFmtPlaneCount(InputVideoCodec->pix_fmt);
 
@@ -308,7 +308,7 @@ void RecordPCM()
 			}
 		);
 		Editor.SetCallbackFillAudioFrame(
-			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize, 0) {
+			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize) {
 
 				int nIsPlanar = IsSampleFmtPlanar(InputAudioCodec->sample_fmt);
 				int nBytesPerSample = GetBytesPerSample(InputAudioCodec->sample_fmt);
