@@ -35,6 +35,7 @@ namespace aveditor
 		// Set input context object
 		FContextInfo ContextInfo;
 		ContextInfo.eJob = n_eJob;
+		ContextInfo.bContextEmpty = Input.m_Context == nullptr;
 
 		if (Input.m_Context)
 		{
@@ -64,10 +65,7 @@ namespace aveditor
 		{
 			for (int i = 0; i < (int)EStreamType::EST_Max; i++)
 			{
-				if (n_nStream & (1 << i))
-				{
-					ContextInfo.nStreams[i] = i;
-				}
+				if (n_nStream & (1 << i)) ContextInfo.nStreams[i] = i;
 			}
 		}
 

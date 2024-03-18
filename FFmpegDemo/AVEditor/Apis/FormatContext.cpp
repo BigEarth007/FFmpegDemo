@@ -74,6 +74,8 @@ namespace aveditor
 
 	AVStream* FFormatContext::FindStream(AVMediaType n_eMediaType, const AVCodec** n_Codec)
 	{
+		if (!m_Context) return nullptr;
+
 		int nIndex = av_find_best_stream(m_Context, n_eMediaType, -1, -1, n_Codec, 0);
 		return nIndex < 0 ? nullptr : m_Context->streams[nIndex];
 	}
@@ -112,52 +114,69 @@ namespace aveditor
 	std::map<EStreamType, FCodecContext>* FFormatContext::BuildAllStreams(
 		FFormatContext& n_InputContext, const int& n_nStream /*= kStreamAll*/)
 	{
-		ThrowExceptionExpr(!m_Context || !n_InputContext.m_Context, "Invalid parameter.\n");
+		ThrowExceptionExpr(!m_Context, "Invalid parameter.\n");
 
 		AVStream* InputStream = nullptr;
 		AVStream* OutputStream = nullptr;
-		AVCodecContext* InputCodecContext = nullptr;
-		EStreamType eStreamType = EStreamType::EST_Max;
 		std::map<EStreamType, FCodecContext>* mInputCodecContext = n_InputContext.GetInputCodecContext();
 
-		for (unsigned int i = 0; i < n_InputContext.m_Context->nb_streams; i++)
-		{
-			InputStream = n_InputContext.m_Context->streams[i];
-			eStreamType = kStreamIndex.at(InputStream->codecpar->codec_type);
+		auto func = 
+			[this, &InputStream, &n_InputContext]
+			(const AVMediaType n_eMediaType, 
+				const AVCodecID n_eCodecID, 
+				AVCodecContext* n_CodecContext) {
 
-			if ((n_nStream & (1 << (int)eStreamType)) == 0) continue;
-
-			InputCodecContext = mInputCodecContext->at(eStreamType).m_Context;
-
-			if (InputStream->codecpar->codec_id == m_Context->oformat->video_codec ||
-				InputStream->codecpar->codec_id == m_Context->oformat->audio_codec ||
-				InputStream->codecpar->codec_id == m_Context->oformat->subtitle_codec)
+			InputStream = n_InputContext.FindStream(n_eMediaType);
+			if (InputStream &&
+				InputStream->codecpar->codec_type == n_eCodecID)
 			{
 				BuildEncodeCodecContext(InputStream);
 			}
-			else if (InputStream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO)
+			else
 			{
-				if (m_Context->oformat->video_codec == AVCodecID::AV_CODEC_ID_NONE)
-					continue;
-				BuildEncodeCodecContext(m_Context->oformat->video_codec, InputCodecContext);
+				if (n_eCodecID != AVCodecID::AV_CODEC_ID_NONE)
+					BuildEncodeCodecContext(n_eCodecID, n_CodecContext);
 			}
-			else if (InputStream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
+		};
+
+		for (auto itr = mInputCodecContext->begin(); itr != mInputCodecContext->end(); itr++)
+		{
+			if ((n_nStream & (1 << (int)itr->first)) == 0) continue;
+
+			switch (itr->first)
 			{
-				if (m_Context->oformat->audio_codec == AVCodecID::AV_CODEC_ID_NONE)
-					continue;
-				BuildEncodeCodecContext(m_Context->oformat->audio_codec, InputCodecContext);
+			case aveditor::EStreamType::EST_Video:
+			{
+				func(AVMediaType::AVMEDIA_TYPE_VIDEO,
+					m_Context->oformat->video_codec,
+					itr->second.m_Context);
 			}
-			else if (InputStream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_SUBTITLE)
+				break;
+			case aveditor::EStreamType::EST_Audio:
 			{
-				if (m_Context->oformat->subtitle_codec == AVCodecID::AV_CODEC_ID_NONE)
-					continue;
-				BuildEncodeCodecContext(m_Context->oformat->subtitle_codec, InputCodecContext);
+				func(AVMediaType::AVMEDIA_TYPE_AUDIO,
+					m_Context->oformat->audio_codec,
+					itr->second.m_Context);
+			}
+				break;
+			case aveditor::EStreamType::EST_Subtitle:
+			{
+				func(AVMediaType::AVMEDIA_TYPE_SUBTITLE,
+					m_Context->oformat->subtitle_codec,
+					itr->second.m_Context);
+			}
+				break;
 			}
 
-			m_mCodecContext[eStreamType].CopyAdditionParameter(InputStream);
-			OutputStream = avformat_new_stream(m_Context, nullptr);
-			ThrowExceptionExpr(!OutputStream, "Fail to create stream\n");
-			OutputStream->codecpar->codec_type = InputStream->codecpar->codec_type;
+			if (InputStream)
+			{
+				m_mCodecContext[itr->first].CopyAdditionParameter(InputStream);
+				BuildStream(InputStream);
+			}
+			else
+			{
+				BuildStream(m_mCodecContext[itr->first]);
+			}
 		}
 
 		return &m_mCodecContext;

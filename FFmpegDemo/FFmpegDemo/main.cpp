@@ -215,7 +215,7 @@ void RecordAudio()
 
 		Editor.StartEdit();
 
-		std::thread t([=]() {
+		std::thread t([&Editor]() {
 
 			// Record 5 seconds
 			std::this_thread::sleep_for(std::chrono::milliseconds(5000));
@@ -365,7 +365,7 @@ int main()
 	//MixAudio();
 	//Play();
 	//RecordAudio();
-	//RecordPCM();
+	RecordPCM();
 
 	auto end = std::chrono::steady_clock::now();
 	auto tt = end - start;
