@@ -59,6 +59,9 @@ namespace aveditor
 		// Pts of audio frame
 		int64_t			m_nAudioFramePts = 0;
 
+		// Is the input context a empty file
+		bool 			m_bIsInputCtxEmpty = false;
+
 		// Callback function for fill AVFrame data buffer
 		std::function<void(AVFrame*, const void*, const int&)> m_funcFillVideoFrame = nullptr;
 		std::function<void(AVFrame*, const void*, const int&)> m_funcFillAudioFrame = nullptr;
