@@ -32,8 +32,10 @@ namespace aveditor
 		void Release();
 
 	protected:
-		Queue<AVFrame*>* m_qFrame = nullptr;
-		Queue<AVPacket*>* m_qPacket = nullptr;
+		Queue<AVFrame*>		m_qFrame;
+		Queue<AVPacket*>	m_qPacket;
+
+		EItemType 		m_eItemType = EItemType::EIT_Packet;
 	};
 #else
 	class AVEDITOR_API CQueueItem
