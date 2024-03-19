@@ -52,7 +52,7 @@ namespace aveditor
 	void CDemuxer::WriteFrameDatas(EStreamType n_eStreamType,
 		const void* n_Data, const int& n_nSize)
 	{
-		if (!m_InputContext) return;
+		if (!m_InputContext || !m_bIsInputCtxEmpty) return;
 
 		int nKey = m_nCurrentPrefix + (int)n_eStreamType;
 		CQueueItem* QueueItem = m_Cache->GetBufferQueue(nKey);
@@ -88,18 +88,19 @@ namespace aveditor
 			"You should call function Init() first.\n");
 		ThrowExceptionExpr(!m_Cache, "Invalid buffer.\n");
 
-		if (!m_InputContext->m_Context) return;
+		auto&		vContextInfo = m_Cache->GetContextInfos();
+		int		nContextIndex = GetContextIndex();
+		m_bIsInputCtxEmpty = vContextInfo[nContextIndex].bContextEmpty;
+		if (m_bIsInputCtxEmpty) return;
 
-		int			ret = 0;
-		int			nKey = 0;
+		int		ret = 0;
+		int		nKey = 0;
 		int64_t		nPts = 0;
 		double		dSecond = 0;
 		AVStream*	Stream = nullptr;
 		AVPacket*	Packet = av_packet_alloc();
 
 		EStreamType eStreamType = EStreamType::EST_Max;
-		auto&		vContextInfo = m_Cache->GetContextInfos();
-		int			nContextIndex = GetContextIndex();
 
 		SetDuration();
 
@@ -198,17 +199,20 @@ namespace aveditor
 
 	void CDemuxer::Stop()
 	{
-		if (m_InputContext && !m_InputContext->m_Context)
+		if (m_InputContext && m_bIsInputCtxEmpty && !IsStop())
 		{
 			// If it's an empty input file, then auto write the end frame
-			auto& vContextInfo = m_Cache->GetContextInfos();
-			int	  nContextIndex = GetContextIndex();
+			auto& 	vContextInfo = m_Cache->GetContextInfos();
+			int 	nContextIndex = GetContextIndex();
 
-			for (int i = 0; i < (int)EStreamType::EST_Max; i++)
+			if (nContextIndex < vContextInfo.size())
 			{
-				if (vContextInfo[nContextIndex].nStreams[i] != -1)
+				for (int i = 0; i < (int)EStreamType::EST_Max; i++)
 				{
-					WriteFrameDatas((EStreamType)i, nullptr, 0);
+					if (vContextInfo[nContextIndex].nStreams[i] != -1)
+					{
+						WriteFrameDatas((EStreamType)i, nullptr, 0);
+					}
 				}
 			}
 		}
@@ -219,14 +223,14 @@ namespace aveditor
 	AVFrame* CDemuxer::WriteVideoFrame(AVCodecContext* n_CodecContext, 
 		const void* n_Data, const int& n_nSize)
 	{
+		if (!m_funcFillVideoFrame) return nullptr;
+		
 		AVFrame* Frame = FFrame::VideoFrame(n_CodecContext->width,
 			n_CodecContext->height, n_CodecContext->pix_fmt);
 		
 		if (Frame)
 		{
-			if (m_funcFillVideoFrame)
-				m_funcFillVideoFrame(Frame, n_Data, n_nSize);
-
+			m_funcFillVideoFrame(Frame, n_Data, n_nSize);
 			Frame->duration = 1;
 			Frame->pts = m_nVideoFrameIndex++;
 		}
@@ -237,15 +241,15 @@ namespace aveditor
 	AVFrame* CDemuxer::WriteAudioFrame(AVCodecContext* n_CodecContext,
 		const void* n_Data, const int& n_nSize)
 	{
+		if (!m_funcFillAudioFrame) return nullptr;
+		
 		AVFrame* Frame = FFrame::AudioFrame(
 			n_CodecContext->frame_size, n_CodecContext->sample_rate,
 			n_CodecContext->sample_fmt, &n_CodecContext->ch_layout);
 
 		if (Frame)
 		{
-			if (m_funcFillAudioFrame)
-				m_funcFillAudioFrame(Frame, n_Data, n_nSize);
-
+			m_funcFillAudioFrame(Frame, n_Data, n_nSize);
 			Frame->pts = m_nAudioFramePts;
 			m_nAudioFramePts += Frame->nb_samples;
 		}
