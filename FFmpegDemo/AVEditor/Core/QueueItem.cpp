@@ -7,15 +7,7 @@ namespace aveditor
 #ifdef STD_QUEUE
 	CQueueItem::CQueueItem(EItemType n_eItemType)
 	{
-		switch (n_eItemType)
-		{
-		case aveditor::EItemType::EIT_Packet:
-			m_qPacket = new Queue<AVPacket*>;
-			break;
-		case aveditor::EItemType::EIT_Frame:
-			m_qFrame = new Queue<AVFrame*>;
-			break;
-		}
+		m_eItemType = n_eItemType;
 	}
 
 	CQueueItem::~CQueueItem()
@@ -25,72 +17,82 @@ namespace aveditor
 
 	void CQueueItem::Push(AVFrame* n_Frame)
 	{
-		if (m_qFrame)
-		{
-			m_qFrame->Push(n_Frame);
-		}
+		if (m_eItemType == EItemType::EIT_Frame)
+			m_qFrame.Push(n_Frame);
 	}
 
 	void CQueueItem::Push(AVPacket* n_Packet)
 	{
-		if (m_qPacket)
-		{
-			m_qPacket->Push(n_Packet);
-		}
+		if (m_eItemType == EItemType::EIT_Packet)
+			m_qPacket.Push(n_Packet);
 	}
 
 	int CQueueItem::Pop(AVFrame*& n_Frame, const int n_nTimeout)
 	{
-		if (!m_qFrame) return -1;
-		return m_qFrame->Pop(n_Frame, n_nTimeout);
+		if (m_eItemType == EItemType::EIT_Frame)
+			return m_qFrame.Pop(n_Frame, n_nTimeout);
+		
+		return -1;
 	}
 
 	int CQueueItem::Pop(AVPacket*& n_Packet, const int n_nTimeout)
 	{
-		if (!m_qPacket) return -1;
-		return m_qPacket->Pop(n_Packet, n_nTimeout);
+		if (m_eItemType == EItemType::EIT_Packet)
+			return m_qPacket.Pop(n_Packet, n_nTimeout);
+		
+		return -1;
 	}
 
 	int CQueueItem::Front(AVFrame*& n_Frame)
 	{
-		if (!m_qFrame) return -1;
-		return m_qFrame->Front(n_Frame);
+		if (m_eItemType == EItemType::EIT_Frame)
+			return m_qFrame.Front(n_Frame);
+		
+		return -1;
 	}
 
 	int CQueueItem::Front(AVPacket*& n_Packet)
 	{
-		if (!m_qPacket) return -1;
-		return m_qPacket->Front(n_Packet);
+		if (m_eItemType == EItemType::EIT_Packet)
+			return m_qPacket.Front(n_Packet);
+
+		return -1;
 	}
 
 	size_t CQueueItem::Size()
 	{
-		if (m_qFrame) return m_qFrame->Size();
-		if (m_qPacket) return m_qPacket->Size();
+		if (m_eItemType == EItemType::EIT_Frame)
+			return m_qFrame.Size();
+		if (m_eItemType == EItemType::EIT_Packet)
+			return m_qPacket.Size();
+		
 		return 0;
 	}
 
 	bool CQueueItem::Empty()
 	{
-		if (m_qFrame) return m_qFrame->Empty();
-		if (m_qPacket) return m_qPacket->Empty();
+		if (m_eItemType == EItemType::EIT_Frame)
+			return m_qFrame.Empty();
+		if (m_eItemType == EItemType::EIT_Packet)
+			return m_qPacket.Empty();
+
 		return true;
 	}
 
 	void CQueueItem::Clear()
 	{
-		if (m_qFrame)
+		if (m_eItemType == EItemType::EIT_Frame)
 		{
-			m_qFrame->Clear(
+			m_qFrame.Clear(
 				[this](AVFrame* n_Frame) {
 					av_frame_free(&n_Frame);
 				}
 			);
 		}
 
-		if (m_qPacket)
+		if (m_eItemType == EItemType::EIT_Packet)
 		{
-			m_qPacket->Clear(
+			m_qPacket.Clear(
 				[this](AVPacket* n_Packet) {
 					av_packet_free(&n_Packet);
 				}
