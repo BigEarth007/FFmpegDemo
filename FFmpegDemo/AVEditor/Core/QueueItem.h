@@ -19,10 +19,11 @@ namespace aveditor
 		CQueueItem(EItemType n_eItemType);
 		~CQueueItem();
 
-		void Push(AVFrame* n_Frame);
-		void Push(AVPacket* n_Packet);
+		void Push(void* n_AVData);
+		int Pop(void*& n_AVData, const int n_nTimeout);
 		int Pop(AVFrame*& n_Frame, const int n_nTimeout);
 		int Pop(AVPacket*& n_Packet, const int n_nTimeout);
+		int Front(void*& n_AVData);
 		int Front(AVFrame*& n_Frame);
 		int Front(AVPacket*& n_Packet);
 		size_t Size();
@@ -32,10 +33,8 @@ namespace aveditor
 		void Release();
 
 	protected:
-		Queue<AVFrame*>		m_qFrame;
-		Queue<AVPacket*>	m_qPacket;
-
-		EItemType 		m_eItemType = EItemType::EIT_Packet;
+		Queue<void*>*	m_qBuffer = nullptr;
+		EItemType		m_eItemType = EItemType::EIT_Frame;
 	};
 #else
 	class AVEDITOR_API CQueueItem

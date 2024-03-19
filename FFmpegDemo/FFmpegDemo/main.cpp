@@ -25,15 +25,16 @@ void Cover()
 #else
 		// or you can do like this
 		auto mInput = Input.GetCodecContext();
-		Output.BuildEncodeCodecContext(AVcodecID::AV_CODEC_ID_MPEG4, 
+		Output.BuildEncodeCodecContext(AVCodecID::AV_CODEC_ID_MPEG4, 
 			mInput->at(EStreamType::EST_Video).m_Context);
-		Output.BuildEncodeCodecContext(AVcodecID::AV_CODEC_ID_MP3, 
+		Output.BuildEncodeCodecContext(AVCodecID::AV_CODEC_ID_MP3,
 			mInput->at(EStreamType::EST_Audio).m_Context);
 
 		auto mOutput = Output.GetCodecContext();
 		// Modify the parameters of the codec as you need, eg:
-		mOutput->at(EStreamType::EST_Video).m_Context->framerate = { 50, 1 };
-		mOutput->at(EStreamType::EST_Video).m_Context->time_base = { 1, 12800 };
+		mOutput->at(EStreamType::EST_Video).m_Context->bit_rate = 260000;
+		//mOutput->at(EStreamType::EST_Video).m_Context->framerate = { 50, 1 };
+		//mOutput->at(EStreamType::EST_Video).m_Context->time_base = { 1, 12800 };
 		
 		Output.BuildStream(mOutput->at(EStreamType::EST_Video));
 		Output.BuildStream(mOutput->at(EStreamType::EST_Audio));
@@ -365,7 +366,7 @@ int main()
 	//MixAudio();
 	//Play();
 	//RecordAudio();
-	RecordPCM();
+	//RecordPCM();
 
 	auto end = std::chrono::steady_clock::now();
 	auto tt = end - start;
