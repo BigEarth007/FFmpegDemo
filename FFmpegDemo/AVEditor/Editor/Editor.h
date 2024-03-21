@@ -6,11 +6,11 @@ namespace aveditor
 	enum class EEditStatus
 	{
 		// It's stopped
-		ES_Stoped,
+		ES_Stopped,
 		// It's running
 		ES_Running,
 		// It's stopping
-		ES_WaittingToStop,
+		ES_Stopping,
 	};
 
 	class AVEDITOR_API CEditor : public Thread
@@ -69,6 +69,8 @@ namespace aveditor
 
 		virtual void Start();
 		virtual void Run();
+		virtual void Stop();
+		virtual bool IsStop();
 
 		virtual IPlayer* CreatePlayer(IPlayer* n_Player = nullptr);
 
@@ -93,6 +95,6 @@ namespace aveditor
 
 		std::vector<IStage*>		m_vStages;
 
-		EEditStatus					m_eStatus = EEditStatus::ES_Stoped;
+		EEditStatus					m_eStatus = EEditStatus::ES_Stopped;
 	};
 }

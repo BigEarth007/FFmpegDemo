@@ -17,8 +17,9 @@ namespace aveditor
 		// >=0: if write this stream into output context, it's the real stream index
 		int		nStreams[(int)EStreamType::EST_Max] = { -1, -1, -1 };
 
-		// Is the context empty? (is there a AVFormatContext or not?)
-		bool	bContextEmpty = false;
+		// The Context name
+		// If it's empty, it means it's a empty context
+		std::string sName;
 
 		// Point to CDemuxer object of this input context
 		void*	Demuxer = nullptr;

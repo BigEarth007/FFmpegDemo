@@ -88,9 +88,9 @@ namespace aveditor
 			"You should call function Init() first.\n");
 		ThrowExceptionExpr(!m_Cache, "Invalid buffer.\n");
 
-		auto&		vContextInfo = m_Cache->GetContextInfos();
+		auto&	vContextInfo = m_Cache->GetContextInfos();
 		int		nContextIndex = GetContextIndex();
-		m_bIsInputCtxEmpty = vContextInfo[nContextIndex].bContextEmpty;
+		m_bIsInputCtxEmpty = vContextInfo[nContextIndex].sName.empty();
 		if (m_bIsInputCtxEmpty) return;
 
 		int		ret = 0;

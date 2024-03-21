@@ -25,6 +25,19 @@ namespace aveditor
 		ThrowExceptionExpr(nContextIndex >= kEditorFactor / kEditorIndexFactor,
 			"Too many input context: %d.\n", nContextIndex);
 
+		if (!IsStop() && nContextIndex > 0)
+		{
+			auto&	vContextInfo = m_Cache.GetContextInfos();
+
+			for (size_t i = 0;i < vContextInfo.size(); i++)
+			{
+				if (vContextInfo[i].sName == n_sFileName)
+				{
+					return m_vInputContext[i]->GetContext();
+				}
+			}
+		}
+
 		CInputContext* InputContext = 
 			new CInputContext(m_vStages, m_Cache, nContextIndex);
 		m_vInputContext.emplace_back(InputContext);
@@ -35,7 +48,7 @@ namespace aveditor
 		// Set input context object
 		FContextInfo ContextInfo;
 		ContextInfo.eJob = n_eJob;
-		ContextInfo.bContextEmpty = Input.m_Context == nullptr;
+		ContextInfo.sName = n_sFileName;
 
 		if (Input.m_Context)
 		{
@@ -78,7 +91,8 @@ namespace aveditor
 		const AVOutputFormat* n_OutputFormat /*= nullptr*/, 
 		const char* n_szFormatName /*= nullptr*/)
 	{
-		m_OutputContext.AllocOutputFile(n_sFileName, n_OutputFormat, n_szFormatName);
+		if (IsStop())
+			m_OutputContext.AllocOutputFile(n_sFileName, n_OutputFormat, n_szFormatName);
 
 		return m_OutputContext.GetContext();
 	}
@@ -220,7 +234,7 @@ namespace aveditor
 
 	void CEditor::Start()
 	{
-		if (m_eStatus == EEditStatus::ES_Stoped)
+		if (m_eStatus == EEditStatus::ES_Stopped)
 		{
 			Thread::Start();
 		}
@@ -236,24 +250,32 @@ namespace aveditor
 
 		m_eStatus = EEditStatus::ES_Running;
 
-		while (!IsStop() && !IsAllStopped())
-		{
-			Sleep(kSleepDelay * 10);
-		}
+		JoinEdit();
 
-		m_eStatus = EEditStatus::ES_WaittingToStop;
+		m_eStatus = EEditStatus::ES_Stopping;
 
 		Release();
 
-		m_eStatus = EEditStatus::ES_Stoped;
+		m_eStatus = EEditStatus::ES_Stopped;
 
 		Thread::Run();
+	}
+
+	void CEditor::Stop()
+	{
+		StopEdit();
+	}
+
+	bool CEditor::IsStop()
+	{
+		return Thread::IsStop() && m_eStatus == EEditStatus::ES_Stopped;
 	}
 
 	IPlayer* CEditor::CreatePlayer(IPlayer* n_Player)
 	{
 		ThrowExceptionExpr(m_vInputContext.size() == 0, "No input context.\n");
 
+		if (!IsStop()) return n_Player;
 		CreateDemuxer();
 		CreateDecoder();
 
@@ -271,6 +293,8 @@ namespace aveditor
 
 	void CEditor::CreateAllStage()
 	{
+		if (!IsStop()) return;
+
 		CreateDemuxer();
 
 		if (GetOutputContext().m_Context)

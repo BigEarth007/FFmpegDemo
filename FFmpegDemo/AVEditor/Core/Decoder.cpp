@@ -71,7 +71,7 @@ namespace aveditor
 		int nIndex = GetContextIndex();
 		auto ContextInfo = m_Cache->GetContextInfo(nIndex);
 
-		if (!ContextInfo || !ContextInfo->bContextEmpty)
+		if (!ContextInfo || !ContextInfo->sName.empty())
 			ret = DecodePacket(n_QueueItem, n_nCurrentKey);
 		else
 			ret = CoverFrame(n_QueueItem, n_nCurrentKey);
