@@ -215,18 +215,39 @@ namespace aveditor
 
 	void CEditor::CreateMuxer()
 	{
-		CMuxer* Muxer = m_OutputContext.CreateMuxer();
-		Muxer->SetFinishedCallback([this, &Muxer]() {
-			StopEdit();
-			CloseOutputFile();
-			}
-		);
+		m_OutputContext.CreateMuxer();
+	}
+
+	void CEditor::Start()
+	{
+		if (m_eStatus == EEditStatus::ES_Stoped)
+		{
+			Thread::Start();
+		}
+		else if (m_eStatus == EEditStatus::ES_Running)
+		{
+			Stop();
+		}
 	}
 
 	void CEditor::Run()
 	{
 		StartEdit();
-		JoinEdit();
+
+		m_eStatus = EEditStatus::ES_Running;
+
+		while (!IsStop() && !IsAllStopped())
+		{
+			Sleep(kSleepDelay * 10);
+		}
+
+		m_eStatus = EEditStatus::ES_WaittingToStop;
+
+		Release();
+
+		m_eStatus = EEditStatus::ES_Stoped;
+
+		Thread::Run();
 	}
 
 	IPlayer* CEditor::CreatePlayer(IPlayer* n_Player)
@@ -236,15 +257,7 @@ namespace aveditor
 		CreateDemuxer();
 		CreateDecoder();
 
-		IPlayer* Player = m_vInputContext[0]->CreatePlayer(n_Player);
-
-		Player->SetFinishedCallback([this]() {
-			StopEdit();
-			m_Cache.Release();
-			}
-		);
-
-		return Player;
+		return m_vInputContext[0]->CreatePlayer(n_Player);
 	}
 
 	void CEditor::SetMaxCacheSize(int n_nIndex, unsigned int n_nMaxCacheSize)
@@ -288,6 +301,11 @@ namespace aveditor
 		}
 	}
 
+	EEditStatus CEditor::GetStstua()
+	{
+		return m_eStatus;
+	}
+
 	void CEditor::StartEdit()
 	{
 		for (size_t i = 0; i < m_vStages.size(); i++)
@@ -298,6 +316,21 @@ namespace aveditor
 	{
 		for (size_t i = 0; i < m_vStages.size(); i++)
 			m_vStages[i]->Stop();
+	}
+
+	bool CEditor::IsAllStopped()
+	{
+		bool bResult = true;
+		for (size_t i = 0; i < m_vStages.size(); i++)
+		{
+			if (!m_vStages[i]->IsStop())
+			{
+				bResult = false;
+				break;
+			}
+		}
+
+		return bResult;
 	}
 
 	void CEditor::JoinEdit()
@@ -312,6 +345,7 @@ namespace aveditor
 		JoinEdit();
 
 		ReleaseVector(m_vStages);
+		CloseOutputFile();
 		m_OutputContext.Release();
 		ReleaseVector(m_vInputContext);
 

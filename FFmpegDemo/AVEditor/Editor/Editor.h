@@ -3,6 +3,16 @@
 
 namespace aveditor
 {
+	enum class EEditStatus
+	{
+		// It's stopped
+		ES_Stoped,
+		// It's running
+		ES_Running,
+		// It's stopping
+		ES_WaittingToStop,
+	};
+
 	class AVEDITOR_API CEditor : public Thread
 	{
 	public:
@@ -57,6 +67,7 @@ namespace aveditor
 
 		virtual void CreateMuxer();
 
+		virtual void Start();
 		virtual void Run();
 
 		virtual IPlayer* CreatePlayer(IPlayer* n_Player = nullptr);
@@ -64,8 +75,13 @@ namespace aveditor
 		void SetMaxCacheSize(int n_nIndex, unsigned int n_nMaxCacheSize);
 
 		void CreateAllStage();
+
+		EEditStatus GetStstua();
+
+	protected:
 		void StartEdit();
 		void StopEdit();
+		bool IsAllStopped();
 		void JoinEdit();
 		virtual void Release();
 
@@ -76,5 +92,7 @@ namespace aveditor
 		COutputContext				m_OutputContext;
 
 		std::vector<IStage*>		m_vStages;
+
+		EEditStatus					m_eStatus = EEditStatus::ES_Stoped;
 	};
 }

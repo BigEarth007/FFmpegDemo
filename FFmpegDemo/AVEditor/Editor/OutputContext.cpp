@@ -13,6 +13,7 @@ namespace aveditor
 
 	COutputContext::~COutputContext()
 	{
+		CloseOutputFile();
 	}
 
 	FFormatContext& COutputContext::AllocOutputFile(const std::string& n_sFileName, 

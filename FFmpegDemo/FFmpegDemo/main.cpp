@@ -47,10 +47,8 @@ void Cover()
 		// We just need one section of the input context, it can be used for video cut
 		//Demuxer->SelectSection(70, 330);
 
-		Editor.StartEdit();
-		Editor.JoinEdit();
-		// Or you can start a thread to edit video
-		// Editor.Start();
+		Editor.Start();
+		Editor.Join();
 	}
 	catch (const std::exception& e)
 	{
@@ -74,10 +72,8 @@ void Concat()
 		Editor.OpenOutputFile();
 		Editor.CreateAllStage();
 
-		Editor.StartEdit();
-		Editor.JoinEdit();
-		// Or you can start a thread to edit video
-		// Editor.Start();
+		Editor.Start();
+		Editor.Join();
 	}
 	catch (const std::exception& e)
 	{
@@ -99,10 +95,8 @@ void DetachAudioStream()
 		Editor.OpenOutputFile();
 		Editor.CreateAllStage();
 
-		Editor.StartEdit();
-		Editor.JoinEdit();
-		// Or you can start a thread to edit video
-		// Editor.Start();
+		Editor.Start();
+		Editor.Join();
 	}
 	catch (const std::exception& e)
 	{
@@ -127,10 +121,8 @@ void MixAudio()
 		Editor.OpenOutputFile();
 		Editor.CreateAllStage();
 
-		Editor.StartEdit();
-		Editor.JoinEdit();
-		// Or you can start a thread to edit video
-		// Editor.Start();
+		Editor.Start();
+		Editor.Join();
 	}
 	catch (const std::exception& e)
 	{
@@ -167,21 +159,13 @@ void Play()
 		Player->InitAudio(aoCodec);
 
 		Player->SetStartupCallback([&Player, &vCodec]() {
-			Player->InitVideo("sdl player", vCodec->width, vCodec->height,
+			Player->InitVideo("SDL player", vCodec->width, vCodec->height,
 			SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 			}
 		);
 
-		Player->SetFinishedCallback([&Editor]() {
-			Editor.StopEdit();
-			Editor.GetCache().Release();
-			}
-		);
-
-		Editor.StartEdit();
-		Editor.JoinEdit();
-		// Or you can start a thread to edit video
-		// Editor.Start();
+		Editor.Start();
+		Editor.Join();
 	}
 	catch (const std::exception& e)
 	{
@@ -214,7 +198,7 @@ void RecordAudio()
 		Editor.OpenOutputFile();
 		Editor.CreateAllStage();
 
-		Editor.StartEdit();
+		Editor.Start();
 
 		std::thread t([&Editor]() {
 
@@ -230,9 +214,7 @@ void RecordAudio()
 		
 		std::cout << "record start" << std::endl;
 		
-		Editor.JoinEdit();
-		// Or you can start a thread to edit video
-		// Editor.Start();
+		Editor.Join();
 	}
 	catch (const std::exception& e)
 	{
@@ -343,10 +325,8 @@ void RecordPCM()
 		}
 
 
-		Editor.StartEdit();
-		Editor.JoinEdit();
-		// Or you can start a thread to edit video
-		// Editor.Start();
+		Editor.Start();
+		Editor.Join();
 	}
 	catch (const std::exception& e)
 	{
@@ -360,7 +340,7 @@ int main()
 	auto start = std::chrono::steady_clock::now();
 	//SetupEditorLog();
 	
-	//Cover();
+	Cover();
 	//Concat();
 	//DetachAudioStream();
 	//MixAudio();
