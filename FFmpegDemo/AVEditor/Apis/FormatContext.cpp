@@ -128,7 +128,7 @@ namespace aveditor
 
 			InputStream = n_InputContext.FindStream(n_eMediaType);
 			if (InputStream &&
-				InputStream->codecpar->codec_type == n_eCodecID)
+				InputStream->codecpar->codec_id == n_eCodecID)
 			{
 				BuildEncodeCodecContext(InputStream);
 			}
@@ -169,14 +169,9 @@ namespace aveditor
 			}
 
 			if (InputStream)
-			{
 				m_mCodecContext[itr->first].CopyAdditionParameter(InputStream);
-				BuildStream(InputStream);
-			}
-			else
-			{
-				BuildStream(m_mCodecContext[itr->first]);
-			}
+
+			BuildStream(m_mCodecContext[itr->first]);
 		}
 
 		return &m_mCodecContext;
