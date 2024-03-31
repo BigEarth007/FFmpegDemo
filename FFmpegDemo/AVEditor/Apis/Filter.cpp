@@ -150,6 +150,9 @@ namespace aveditor
 			avfilter_graph_free(&m_FilterGraph);
 			m_FilterGraph = nullptr;
 		}
+
+		m_SinkFilter = nullptr;
+		m_vInputFilters.clear();
 	}
 
 	AVEDITOR_API void FilterVideoOption(AVFilterContext* n_FilterContext, 
