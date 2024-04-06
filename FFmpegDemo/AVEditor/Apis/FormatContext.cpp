@@ -178,9 +178,7 @@ namespace aveditor
 			}
 
 			if (InputStream)
-			{
 				m_mCodecContext[itr->first].CopyAdditionParameter(InputStream);
-			}
 
 			BuildStream(m_mCodecContext[itr->first]);
 		}
