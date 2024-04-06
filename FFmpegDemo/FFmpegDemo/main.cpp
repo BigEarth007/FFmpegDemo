@@ -10,7 +10,10 @@ using namespace aveditor;
 /*
 * Convert .mp4 to .mov 
 */
-void Cover()
+// Time cost: 1.95787e+06 millisecond.
+// Time cost: 1.50517e+06 millisecond.
+// Time cost: 1.34881e+06 millisecond.
+static void Cover()
 {
 	try
 	{
@@ -42,7 +45,6 @@ void Cover()
 		
 		Editor.OpenOutputFile();
 		 
-		Editor.CreateAllStage();
 		//CDemuxer* Demuxer = (CDemuxer*)Editor.GetCache().GetContextInfo(0)->Demuxer;
 		// We just need one section of the input context, it can be used for video cut
 		//Demuxer->SelectSection(70, 330);
@@ -57,7 +59,7 @@ void Cover()
 }
 
 // Append one video to another one
-void Concat()
+static void Concat()
 {
 	try
 	{
@@ -70,7 +72,6 @@ void Concat()
 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
-		Editor.CreateAllStage();
 
 		Editor.Start();
 		Editor.Join();
@@ -82,18 +83,17 @@ void Concat()
 }
 
 // Detach audio stream from input context
-void DetachAudioStream()
+static void DetachAudioStream()
 {
 	try
 	{
 		CEditor Editor;
 
-		FFormatContext& Input = Editor.OpenInputFile("1.mp4", EJob::EJ_Normal, kStreamAudio);
+		FFormatContext& Input = Editor.OpenInputFile("1.mp4", ETask::T_Normal, kStreamAudio);
 		FFormatContext& Output = Editor.AllocOutputFile("1.mp3");
 
 		Output.BuildAllStreams(Input, kStreamAudio);
 		Editor.OpenOutputFile();
-		Editor.CreateAllStage();
 
 		Editor.Start();
 		Editor.Join();
@@ -106,20 +106,19 @@ void DetachAudioStream()
 
 // Mix audio 2.aac into 1.mp4
 // it can also mix audio file
-void MixAudio()
+static void MixAudio()
 {
 	try
 	{
 		CEditor Editor;
 
-		FFormatContext& Input = Editor.OpenInputFile("2.mp4", EJob::EJ_AMixMain);
-		FFormatContext& Input2 = Editor.OpenInputFile("1.mp3", EJob::EJ_AMixBranch);
+		FFormatContext& Input = Editor.OpenInputFile("4.mp4", ETask::T_AMixMain);
+		FFormatContext& Input2 = Editor.OpenInputFile("1.aac", ETask::T_AMixBranch);
 
 		FFormatContext& Output = Editor.AllocOutputFile("2.mov");
 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
-		Editor.CreateAllStage();
 
 		Editor.Start();
 		Editor.Join();
@@ -132,37 +131,53 @@ void MixAudio()
 
 // Play video, just for test, do not be care
 // You can inherit IPlayer class to define your player
-void Play()
+class OutputPlayer : public IAVIOHandle
+{
+public:
+	int ReceiveData(const EStreamType n_eStreamType,
+		void* n_Data, EDataType n_eType, int n_nIndex)
+	{
+		if (!n_Data) return 0;
+		// display frame
+		// ...
+		DebugLog("Output frame %d, Type %d\n", n_eStreamType, n_eType);
+		AVFreeData(n_eType, n_Data);
+
+		return 0;
+	}
+};
+
+static void Play()
 {
 	try
 	{
 		CEditor Editor;
+		OutputPlayer op;
 
-		FFormatContext& Input = Editor.OpenInputFile("tv.mp4");
+		FFormatContext& Input = Editor.OpenInputFile("1.mp4");
 
-		AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::EST_Video);
+		AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::ST_Video);
 		//AVCodecContext* aCodec = Input.GetCodecContext(EStreamType::EST_Audio);
 
 		// Maybe AVFrame decoded from input context should be convert to target 
 		// sample format/pixel format, so the target codec context should be created
-		FFormatContext& Output = Editor.GetOutputContext();
+		FFormatContext& Output = Editor.GetOutputContext()->GetContext();
 		Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_VIDEO));
 		Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_AUDIO));
 		// could not use this function, as the frame_size is 0
 		//Output.BuildCodecContext(aCodec->codec_id, aCodec);
 
-		AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::EST_Audio);
+		AVCodecContext* ovCodec = Output.GetCodecContext(EStreamType::ST_Video);
+
+		ovCodec->width = 800;
+		ovCodec->height = 600;
+		ovCodec->pix_fmt = GetSupportedPixelFormat(ovCodec->codec, AVPixelFormat::AV_PIX_FMT_YUV420P);
+
+		AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
 		aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S32;
 
-		// If parameter is nullptr(default), it will instance CSDLPlayer object
-		CSDLPlayer* Player = (CSDLPlayer*)Editor.CreatePlayer();
-		Player->InitAudio(aoCodec);
-
-		Player->SetStartupCallback([&Player, &vCodec]() {
-			Player->InitVideo("SDL player", vCodec->width, vCodec->height,
-			SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-			}
-		);
+		// Frames will be sent to op
+		Editor.SetOutputIOHandle(&op);
 
 		Editor.Start();
 		Editor.Join();
@@ -174,7 +189,7 @@ void Play()
 }
 
 // Recording audio, (in this way, you can also recording video)
-void RecordAudio()
+static void RecordAudio()
 {
 	try
 	{
@@ -190,13 +205,12 @@ void RecordAudio()
 
 		CEditor Editor;
 
-		FFormatContext& Input = Editor.OpenInputFile(sUtf8, EJob::EJ_Normal, 
+		FFormatContext& Input = Editor.OpenInputFile(sUtf8, ETask::T_Normal, 
 			kStreamAll, Device.m_InputFormat);
 		FFormatContext& Output = Editor.AllocOutputFile("record.aac");
 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
-		Editor.CreateAllStage();
 
 		Editor.Start();
 
@@ -204,8 +218,7 @@ void RecordAudio()
 
 			// Record 5 seconds
 			std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-			CDemuxer* Demuxer = (CDemuxer*)Editor.GetCache().GetContextInfo(0)->Demuxer;
-			Demuxer->Stop();
+			Editor.Stop();
 
 			std::cout << "record over" << std::endl;
 
@@ -223,15 +236,64 @@ void RecordAudio()
 }
 
 // Recording PCM date to output file
-void RecordPCM()
+class InputCtx : public IContextHandle
+{
+public:
+	// Fill video frame when write PCM data
+	virtual void FillVideoFrame(AVFrame* n_Frame,
+		const void* n_Data, const int& n_nSize) const
+	{
+		IContextHandle::FillVideoFrame(n_Frame, n_Data, n_nSize);
+
+		int nPlanes = GetVideoPlanes();
+
+		if (1 < nPlanes)
+		{
+			for (int i = 0; i < n_Frame->height; i++)
+			{
+				for (int j = 0; j < n_Frame->width; j++)
+				{
+					// set the frame date according to source data format
+					// ....
+				}
+			}
+		}
+	}
+
+	// Fill audio frame when write PCM data
+	virtual void FillAudioFrame(AVFrame* n_Frame,
+		const void* n_Data, const int& n_nSize) const
+	{
+		IContextHandle::FillAudioFrame(n_Frame, n_Data, n_nSize);
+
+		int nIsPlanar = GetAudioPlanar();
+		int nBytesPerSample = GetBytesPerSample();
+
+		if (0 != nIsPlanar)
+		{
+			uint8_t* ptr = (uint8_t*)n_Data;
+			for (int i = 0; i < n_Frame->nb_samples; i++)
+			{
+				for (int j = 0; j < GetChannelCount(); j++)
+				{
+					memcpy_s(n_Frame->data[j] + i * nBytesPerSample, nBytesPerSample,
+						ptr, nBytesPerSample);
+					ptr += nBytesPerSample;
+				}
+			}
+		}
+	}
+};
+static void RecordPCM()
 {
 	try
 	{
 		CEditor Editor;
+		InputCtx ctx;
 
 		// Create an empty input context
-		FFormatContext& Input = Editor.OpenInputFile("", EJob::EJ_Normal, kStreamVA);
-		FFormatContext& Output = Editor.AllocOutputFile("1.mp4");
+		FFormatContext& Input = Editor.OpenInputFile("", ETask::T_Normal, kStreamVA);
+		FFormatContext& Output = Editor.AllocOutputFile("output.mp4");
 
 		// Build decode codec for input context
 		// Maybe the Pixel Format/ Sample Format of the source data 
@@ -242,7 +304,7 @@ void RecordPCM()
 
 		// Video Codec Context
 		AVCodecContext* InputVideoCodec = Input.BuildDecodeCodecContext(
-			EStreamType::EST_Video, AVCodecID::AV_CODEC_ID_RAWVIDEO)->m_Context;
+			EStreamType::ST_Video, AVCodecID::AV_CODEC_ID_RAWVIDEO)->m_Context;
 		InputVideoCodec->width = 640;
 		InputVideoCodec->height = 480;
 		InputVideoCodec->bit_rate = 128000;
@@ -254,7 +316,7 @@ void RecordPCM()
 
 		// Audio Codec Context
 		AVCodecContext* InputAudioCodec = Input.BuildDecodeCodecContext(
-			EStreamType::EST_Audio, AVCodecID::AV_CODEC_ID_FIRST_AUDIO)->m_Context;
+			EStreamType::ST_Audio, AVCodecID::AV_CODEC_ID_FIRST_AUDIO)->m_Context;
 		InputAudioCodec->bit_rate = 192000;
 		InputAudioCodec->sample_rate = GetSupportedSampleRate(InputAudioCodec->codec, 41000);
 		InputAudioCodec->time_base = { 1, InputAudioCodec->sample_rate };
@@ -264,58 +326,7 @@ void RecordPCM()
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
 
-		Editor.CreateAllStage();
-
-		// Set callback function to parse PCM data
-		Editor.SetCallbackFillVideoFrame(
-			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize) {
-
-				int nPlanes = GetPixFmtPlaneCount(InputVideoCodec->pix_fmt);
-
-				if (1 == nPlanes)
-				{
-					memcpy_s(n_Frame->data[0], n_Frame->linesize[0],
-						n_Data, n_nSize);
-				}
-				else
-				{
-					for (int i = 0; i < InputVideoCodec->height; i++)
-					{
-						for (int j = 0; j < InputVideoCodec->width; j++)
-						{
-							// set the frame date according to source data format
-							// ....
-						}
-					}
-				}
-			}
-		);
-		Editor.SetCallbackFillAudioFrame(
-			[=](AVFrame* n_Frame, const void* n_Data, const int& n_nSize) {
-
-				int nIsPlanar = IsSampleFmtPlanar(InputAudioCodec->sample_fmt);
-				int nBytesPerSample = GetBytesPerSample(InputAudioCodec->sample_fmt);
-
-				if (0 == nIsPlanar)
-				{
-					memcpy_s(n_Frame->data[0], n_Frame->linesize[0],
-						n_Data, n_nSize);
-				}
-				else
-				{
-					uint8_t* ptr = (uint8_t*)n_Data;
-					for (int i = 0;i < n_Frame->nb_samples; i++)
-					{
-						for (int j = 0;j < InputAudioCodec->ch_layout.nb_channels; j++)
-						{
-							memcpy_s(n_Frame->data[j] + i * nBytesPerSample, nBytesPerSample,
-								ptr, nBytesPerSample);
-							ptr += nBytesPerSample;
-						}
-					}
-				}
-			}
-		);
+		Editor.SetInputContextHandle(&ctx, 0);
 
 		// the you can call following function to write frame data
 		while (true)
@@ -323,7 +334,6 @@ void RecordPCM()
 			//Editor.WriteFrameDatas(EStreamType::EST_Video, a, b, 0);
 			//Editor.WriteFrameDatas(EStreamType::EST_Audio, a, b, 0);
 		}
-
 
 		Editor.Start();
 		Editor.Join();
@@ -334,13 +344,12 @@ void RecordPCM()
 	}
 }
 
-#undef main
 int main()
 {
 	auto start = std::chrono::steady_clock::now();
 	//SetupEditorLog();
 	
-	Cover();
+	//Cover();
 	//Concat();
 	//DetachAudioStream();
 	//MixAudio();

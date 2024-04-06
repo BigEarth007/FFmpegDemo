@@ -6,8 +6,7 @@ namespace aveditor
 	class AVEDITOR_API COutputContext : public CBaseContext
 	{
 	public:
-		COutputContext(std::vector<IStage*>& n_vStages,
-			FCache& n_Cache, const int n_nContextIndex);
+		COutputContext(CEditor& n_Editor, const int n_nContextIndex);
 		virtual ~COutputContext();
 
 		FFormatContext& AllocOutputFile(const std::string& n_sFileName,
@@ -17,7 +16,7 @@ namespace aveditor
 		void OpenOutputFile();
 		void CloseOutputFile();
 
-		virtual CMuxer* CreateMuxer();
-
+		// Combine streams mark, which indicates selected streams
+		const int StreamsCode();
 	};
 }

@@ -1,15 +1,10 @@
 #pragma once
-#ifdef STD_QUEUE
 #include <queue>
 #include <mutex>
 #include <condition_variable>
-#else
-#include <atomic>
-#endif
 
 namespace aveditor
 {
-#ifdef STD_QUEUE
 	template<typename T>
 	class AVEDITOR_API Queue {
 	public:
@@ -73,35 +68,4 @@ namespace aveditor
 		std::queue<T> _queue;
 		//std::condition_variable_any _empty_notify;
 	};
-#else
-	class AVEDITOR_API Queue {
-	public:
-		Queue() {}
-		~Queue() {}
-
-		void Push(void* n_Item);
-
-		int Pop(void*& n_Item, const int n_nTimeout);
-
-		int Front(void*& n_Item);
-
-		void Clear(std::function<void(void*)> func = nullptr);
-
-		int Size();
-
-		bool Empty() { return m_nSize == 0; }
-
-	protected:
-		struct FNode
-		{
-			FNode* next = nullptr;
-			void* item = nullptr;
-		};
-
-	private:
-		FNode*			m_head = nullptr;
-		FNode*			m_last = nullptr;
-		std::atomic_int	m_nSize = 0;
-	};
-#endif
 }

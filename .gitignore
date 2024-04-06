@@ -43,3 +43,6 @@ x64
 *.mp3
 *.avi
 *.mov
+
+# Other
+*.zip

@@ -22,8 +22,8 @@ namespace aveditor
 		// Add an input file, if n_sFileName == "", then add an empty input file
 		// For empty input file, it can record PCM data, and writes into output file
 		FFormatContext& OpenInputFile(const std::string& n_sFileName,
-			const EJob n_eJob = EJob::EJ_Normal,
-			const int& n_nStream = kStreamAll,
+			const ETask n_eTask = ETask::T_Normal,
+			const int& n_nStreams = kStreamAll,
 			const AVInputFormat* n_InputFormat = nullptr, 
 			AVDictionary* n_Options = nullptr);
 
@@ -35,17 +35,43 @@ namespace aveditor
 		void OpenOutputFile();
 		void CloseOutputFile();
 
-		FFormatContext& GetInputContext(const int& n_nContextIndex = 0);
-		FFormatContext& GetOutputContext();
-		FCache& GetCache();
+		// Get input context
+		CInputContext* GetInputContext(const int& n_nContextIndex = 0);
+		// Get input contexts by batch index
+		std::vector<int> GetInputContextsByBatch(const int& n_nBatchIndex);
+		// Get number of input context
+		const size_t GetInputSize() const;
 
-		// Set the callback function to fill data buffer of video AVFrame
-		void SetCallbackFillVideoFrame(
-			std::function<void(AVFrame*, const void*, const int&)> n_func, 
+		// Get output context
+		COutputContext* GetOutputContext();
+
+		// Get AVObject
+		CAVObject* GetAVObject();
+
+		// Set Audio/Video IO handle for output 
+		void SetOutputIOHandle(IAVIOHandle* n_Handle);
+
+		// Set Audio/Video IO handle for input 
+		void SetInputContextHandle(IContextHandle* n_Handle,
 			const int& n_nContextIndex = 0);
-		// Set the callback function to fill data buffer of audio AVFrame
-		void SetCallbackFillAudioFrame(
-			std::function<void(AVFrame*, const void*, const int&)> n_func, 
+
+		// Set Audio/Video IO handle for input 
+		void SetInputIOHandle(IAVIOHandle* n_Handle, 
+			const int& n_nContextIndex = 0);
+
+		// Set max buffer queue size
+		void SetMaxBufferSize(int n_nSize);
+
+		// Get max batch index of all input contexts
+		const int GetMaxBatch() const;
+
+		// Get max batch index of all input contexts that for audio mix
+		const int GetMaxAudioMixBatch(int& n_nCount) const;
+
+		// Set time section; it's second;
+		// const double n_dStart: start timestamp
+		// const double n_dDuration: time duration, 0 means to the end
+		void SelectSection(const double n_dStart, const double n_dDuration = 0,
 			const int& n_nContextIndex = 0);
 
 		// Write Frame data into this empty input file
@@ -54,46 +80,30 @@ namespace aveditor
 			const void* n_Data, const int& n_nSize, 
 			const int& n_nContextIndex = 0);
 
-		virtual void CreateDemuxer();
-
-		virtual void CreateDecoder();
-
-		virtual void CreateFilter(EStreamType n_eStreamType);
-
-		virtual void CreateEncoder();
-
-		// Equal CreateDecoder + CreateEncoder
-		virtual void CreateTranscoder();
-
-		virtual void CreateMuxer();
-
 		virtual void Start();
-		virtual void Run();
-		virtual void Stop();
 		virtual bool IsStop();
 
-		virtual IPlayer* CreatePlayer(IPlayer* n_Player = nullptr);
-
-		void SetMaxCacheSize(int n_nIndex, unsigned int n_nMaxCacheSize);
-
-		void CreateAllStage();
-
-		EEditStatus GetStstua();
+		EEditStatus GetStatus() const;
 
 	protected:
-		void StartEdit();
-		void StopEdit();
-		bool IsAllStopped();
-		void JoinEdit();
+		virtual void Run();
+
+		// Selected streams should be equal between input and output
+		void CheckSelectedStreams();
+
+		void SetStagesStart(bool n_bStart);
+		void SetStagesPause(bool n_bPause);
+		void JoinStages();
+
+	protected:
 		virtual void Release();
 
 	protected:
-		FCache			m_Cache;
-
+		std::vector<IStage*>		m_vStages;
 		std::vector<CInputContext*>	m_vInputContext;
 		COutputContext				m_OutputContext;
 
-		std::vector<IStage*>		m_vStages;
+		CAVObject					m_AVObject;
 
 		EEditStatus					m_eStatus = EEditStatus::ES_Stopped;
 	};

@@ -3,12 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FFmpegDemo", "FFmpegDemo\FFmpegDemo.vcxproj", "{800747DB-DCFD-4C34-B643-903DD772424A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AVEditor", "AVEditor\AVEditor.vcxproj", "{0462C6A6-047D-42E9-B058-072E5596C7AC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AVPlayer", "AVPlayer\AVPlayer.vcxproj", "{00C46346-D950-4B6F-87BF-1AC138B99893}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0462C6A6-047D-42E9-B058-072E5596C7AC} = {0462C6A6-047D-42E9-B058-072E5596C7AC}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AVEditor", "AVEditor\AVEditor.vcxproj", "{0462C6A6-047D-42E9-B058-072E5596C7AC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FFmpegDemo", "FFmpegDemo\FFmpegDemo.vcxproj", "{800747DB-DCFD-4C34-B643-903DD772424A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0462C6A6-047D-42E9-B058-072E5596C7AC} = {0462C6A6-047D-42E9-B058-072E5596C7AC}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,14 +23,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x64.ActiveCfg = Debug|x64
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x64.Build.0 = Debug|x64
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x86.ActiveCfg = Debug|Win32
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x86.Build.0 = Debug|Win32
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x64.ActiveCfg = Release|x64
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x64.Build.0 = Release|x64
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x86.ActiveCfg = Release|Win32
-		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x86.Build.0 = Release|Win32
 		{0462C6A6-047D-42E9-B058-072E5596C7AC}.Debug|x64.ActiveCfg = Debug|x64
 		{0462C6A6-047D-42E9-B058-072E5596C7AC}.Debug|x64.Build.0 = Debug|x64
 		{0462C6A6-047D-42E9-B058-072E5596C7AC}.Debug|x86.ActiveCfg = Debug|Win32
@@ -34,6 +31,22 @@ Global
 		{0462C6A6-047D-42E9-B058-072E5596C7AC}.Release|x64.Build.0 = Release|x64
 		{0462C6A6-047D-42E9-B058-072E5596C7AC}.Release|x86.ActiveCfg = Release|Win32
 		{0462C6A6-047D-42E9-B058-072E5596C7AC}.Release|x86.Build.0 = Release|Win32
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Debug|x64.ActiveCfg = Debug|x64
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Debug|x64.Build.0 = Debug|x64
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Debug|x86.ActiveCfg = Debug|x64
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Debug|x86.Build.0 = Debug|x64
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Release|x64.ActiveCfg = Release|x64
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Release|x64.Build.0 = Release|x64
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Release|x86.ActiveCfg = Release|x64
+		{00C46346-D950-4B6F-87BF-1AC138B99893}.Release|x86.Build.0 = Release|x64
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x64.ActiveCfg = Debug|x64
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x64.Build.0 = Debug|x64
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x86.ActiveCfg = Debug|Win32
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Debug|x86.Build.0 = Debug|Win32
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x64.ActiveCfg = Release|x64
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x64.Build.0 = Release|x64
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x86.ActiveCfg = Release|Win32
+		{800747DB-DCFD-4C34-B643-903DD772424A}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

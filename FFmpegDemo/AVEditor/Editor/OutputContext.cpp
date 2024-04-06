@@ -4,9 +4,8 @@
 
 namespace aveditor
 {
-	COutputContext::COutputContext(std::vector<IStage*>& n_vStages, 
-		FCache& n_Cache, const int n_nContextIndex)
-		: CBaseContext(n_vStages, n_Cache, n_nContextIndex)
+	COutputContext::COutputContext(CEditor& n_Editor, const int n_nContextIndex)
+		: CBaseContext(n_Editor, n_nContextIndex)
 	{
 
 	}
@@ -42,19 +41,18 @@ namespace aveditor
 			m_Context.WriteTrailer();
 	}
 
-	CMuxer* COutputContext::CreateMuxer()
+	const int COutputContext::StreamsCode()
 	{
-		ThrowExceptionExpr(m_Context.StreamSize() == 0,
-			"No stream in output context.\n");
+		int ret = 0;
 
-		int nPrefix = StageToPrefix(EStage::ES_Mux, 0);
+		auto v = m_Context.GetCodecContext();
 
-		CMuxer* Muxer = new CMuxer(*m_Cache, nPrefix);
-		Muxer->Init(m_Context);
+		for (auto itr = v->begin(); itr != v->end(); itr++)
+		{
+			ret |= (1 << (int)itr->first);
+		}
 
-		m_vStages->emplace_back(Muxer);
-
-		return Muxer;
+		return ret;
 	}
 
 }

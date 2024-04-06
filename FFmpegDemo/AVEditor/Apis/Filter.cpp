@@ -44,9 +44,9 @@ namespace aveditor
 
 		if (n_CodecContext)
 		{
-			if (m_eStreamType == EStreamType::EST_Video)
+			if (m_eStreamType == EStreamType::ST_Video)
 				FilterVideoOption(FilterContext, n_CodecContext);
-			else if (m_eStreamType == EStreamType::EST_Audio)
+			else if (m_eStreamType == EStreamType::ST_Audio)
 				FilterAudioOption(FilterContext, n_CodecContext);
 		}
 
@@ -91,14 +91,6 @@ namespace aveditor
 		int ret = avfilter_graph_config(m_FilterGraph, arg_ctx);
 
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to config the filter graph.\n");
-
-		for (unsigned int i = 0; i < m_FilterGraph->nb_filters; i++)
-		{
-			if (strstr(m_FilterGraph->filters[i]->filter->name, "buffersink"))
-				m_SinkFilter = m_FilterGraph->filters[i];
-			else if (strstr(m_FilterGraph->filters[i]->filter->name, "buffer"))
-				m_vInputFilters.emplace_back(m_FilterGraph->filters[i]);
-		}
 	}
 
 	AVFilterContext* FFilter::FindFilterContext(const char* n_szInstName)
@@ -130,15 +122,17 @@ namespace aveditor
 
 	void FFilter::Push(const unsigned int n_nIndex, AVFrame* n_Frame)
 	{
-		if (n_nIndex < m_vInputFilters.size())
-			Push(m_vInputFilters[n_nIndex], n_Frame);
+		if (n_nIndex < m_FilterGraph->nb_filters)
+			Push(m_FilterGraph->filters[n_nIndex], n_Frame);
 	}
 
-	int FFilter::Pop(AVFrame* n_Frame)
+	int FFilter::Pop(const unsigned int n_nIndex, AVFrame* n_Frame)
 	{
-		if (!m_FilterGraph) return -1;
+		if (!m_FilterGraph || n_nIndex >= m_FilterGraph->nb_filters)
+			return -1;
 
-		int ret = av_buffersink_get_frame(m_SinkFilter, n_Frame);
+		int ret = av_buffersink_get_frame(
+			m_FilterGraph->filters[n_nIndex], n_Frame);
 
 		return ret;
 	}

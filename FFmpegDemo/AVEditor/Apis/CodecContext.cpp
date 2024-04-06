@@ -216,6 +216,8 @@ namespace aveditor
 	{
 		ThrowExceptionExpr(!m_Context, "You should call function Alloc() first.\n");
 
+		m_eRealPixelFormat = m_Context->pix_fmt;
+
 		int nIsDecoder = av_codec_is_decoder(m_Context->codec);
 		if (nIsDecoder &&
 			m_Context->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO &&
@@ -348,6 +350,11 @@ namespace aveditor
 			return av_get_bytes_per_sample(m_Context->sample_fmt);
 
 		return 0;
+	}
+
+	const AVPixelFormat FCodecContext::GetRealPixelFormat() const
+	{
+		return m_eRealPixelFormat;
 	}
 
 	//////////////////////////////////////////////////////////////////////

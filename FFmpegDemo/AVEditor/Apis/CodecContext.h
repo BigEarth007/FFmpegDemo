@@ -62,10 +62,15 @@ namespace aveditor
 		// Audio: number of bytes per sample
 		int GetBytesPerSample();
 
+		// Get real pixel format of codec
+		const AVPixelFormat GetRealPixelFormat() const;
+
 		AVCodecContext* m_Context = nullptr;
 
 	protected:
 		AVPixelFormat	m_eHwPixelFormat = AVPixelFormat::AV_PIX_FMT_NONE;
+		// for hardware codec, it is original codec pixel format
+		AVPixelFormat	m_eRealPixelFormat = AVPixelFormat::AV_PIX_FMT_NONE;
 		AVBufferRef*	m_HwDeviceContext = nullptr;
 	};
 

@@ -32,6 +32,45 @@ namespace aveditor
 		avdevice_register_all();
 	}
 
+	AVEDITOR_API const EStreamType MediaType2StreamType(const AVMediaType n_eMediaType)
+	{
+		EStreamType eStreamType = EStreamType::ST_Video;
+
+		switch (n_eMediaType)
+		{
+		case AVMediaType::AVMEDIA_TYPE_VIDEO:
+			eStreamType = EStreamType::ST_Video;
+			break;
+		case AVMediaType::AVMEDIA_TYPE_AUDIO:
+			eStreamType = EStreamType::ST_Audio;
+			break;
+		case AVMediaType::AVMEDIA_TYPE_SUBTITLE:
+			eStreamType = EStreamType::ST_Subtitle;
+			break;
+		}
+
+		return eStreamType;
+	}
+
+	AVEDITOR_API void AVFreeData(const EDataType n_eType, void* n_Data)
+	{
+		if (!n_Data) return;
+
+		switch (n_eType)
+		{
+		case aveditor::EDataType::DT_None:
+			break;
+		case aveditor::EDataType::DT_Packet:
+			av_packet_free((AVPacket**)&n_Data);
+			break;
+		case aveditor::EDataType::DT_Frame:
+			av_frame_free((AVFrame**)&n_Data);
+			break;
+		default:
+			break;
+		}
+	}
+
 	AVEDITOR_API std::string ErrorCode2String(int n_nErrCode)
 	{
 		std::string sResult;

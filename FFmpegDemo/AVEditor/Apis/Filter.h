@@ -47,10 +47,10 @@ namespace aveditor
 		void Push(const unsigned int n_nIndex, AVFrame* n_Frame);
 
 		/* Get all the filtered output that is available. */
-		int Pop(AVFrame* n_Frame);
+		int Pop(const unsigned int n_nIndex, AVFrame* n_Frame);
 
 		// Get stream type
-		EStreamType GetStreamType() { return m_eStreamType; }
+		EStreamType GetStreamType() const { return m_eStreamType; }
 
 		void Release();
 
@@ -59,13 +59,7 @@ namespace aveditor
 
 	protected:
 		// Stream type
-		EStreamType		m_eStreamType = EStreamType::EST_Max;
-
-		// Output filter context
-		AVFilterContext* m_SinkFilter = nullptr;
-
-		// The filter context for adding frame
-		std::vector<AVFilterContext*>	m_vInputFilters;
+		EStreamType		m_eStreamType = EStreamType::ST_Size;
 	};
 
 	extern "C"

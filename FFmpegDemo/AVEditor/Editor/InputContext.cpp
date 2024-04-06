@@ -4,16 +4,18 @@
 
 namespace aveditor
 {
-	CInputContext::CInputContext(std::vector<IStage*>& n_vStages, 
-		FCache& n_Cache, const int n_nContextIndex)
-		: CBaseContext(n_vStages, n_Cache, n_nContextIndex)
+	CInputContext::CInputContext(CEditor& n_Editor, const int n_nContextIndex)
+		: CBaseContext(n_Editor, n_nContextIndex)
 	{
-
+		for (int i = 0;i < (int)EStreamType::ST_Size; i++)
+		{
+			m_nStreams[i] = -1;
+		}
 	}
 
 	CInputContext::~CInputContext()
 	{
-
+		Release();
 	}
 
 	FFormatContext& CInputContext::OpenInputFile(const std::string& n_sFileName,
@@ -32,165 +34,201 @@ namespace aveditor
 		return m_Context;
 	}
 
-	CDemuxer* CInputContext::CreateDemuxer(FFormatContext& n_OutputContext)
+	const double CInputContext::Duration()
 	{
-		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
-		if (!ContextInfo) return nullptr;
+		double dDuration = m_dSectionTo - m_dSectionFrom;
+		if (dDuration == 0) dDuration = m_Context.Duration();
 
-		EItemType ItemType = EItemType::EIT_Packet;
-		// For empty input file, no packet can be read
-		if (!m_Context.m_Context) ItemType = EItemType::EIT_Frame;
-
-		for (int i = 0; i < (int)EStreamType::EST_Max; i++)
-		{
-			if (ContextInfo->nStreams[i] == -1) continue;
-
-			m_Cache->CreateCache(EStage::ES_Demux,
-				ItemType, m_nContextIndex, (EStreamType)i);
-		}
-
-		int nPrefix = StageToPrefix(EStage::ES_Demux, m_nContextIndex);
-
-		CDemuxer* Demuxer = new CDemuxer(*m_Cache, nPrefix);
-		Demuxer->Init(m_Context, &n_OutputContext);
-
-		m_vStages->emplace_back(Demuxer);
-
-		return Demuxer;
+		return dDuration;
 	}
 
-	void CInputContext::CreateDecoder(FFormatContext& n_OutputContext)
+	const double CInputContext::GetSectionFrom() const
 	{
-		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
-		if (!ContextInfo) return;
-
-		std::map<EStreamType, FCodecContext>* mInputCodecContext = m_Context.GetCodecContext();
-		std::map<EStreamType, FCodecContext>* mOutputCodecContext = n_OutputContext.GetCodecContext();
-
-		for (int i = 0; i < (int)EStreamType::EST_Max; i++)
-		{
-			if (ContextInfo->nStreams[i] == -1) continue;
-			if (ContextInfo->eJob == EJob::EJ_AMixBranch &&
-				i == (int)EStreamType::EST_Video)
-				continue;
-
-			auto itrInput = mInputCodecContext->find((EStreamType)i);
-			if (itrInput == mInputCodecContext->end()) continue;
-
-			auto itrOutput = mOutputCodecContext->find((EStreamType)i);
-			if (itrOutput == mOutputCodecContext->end()) continue;
-
-			// if n_OutputContext.m_Context == nullptr, it's playing video
-			// The same codec type, no need to decode
-			if (n_OutputContext.m_Context &&
-				itrInput->second.m_Context->codec_id ==
-				itrOutput->second.m_Context->codec_id &&
-				ContextInfo->eJob == EJob::EJ_Normal)
-				continue;
-
-			int nPrefix = m_Cache->CreateCache(EStage::ES_Decode,
-				EItemType::EIT_Frame, m_nContextIndex, (EStreamType)i);
-			CDecoder* Decoder = new CDecoder(*m_Cache, nPrefix, (EStreamType)i);
-			Decoder->Init(itrInput->second, itrOutput->second);
-
-			m_vStages->emplace_back(Decoder);
-		}
+		return m_dSectionFrom;
 	}
 
-	void CInputContext::CreateEncoder(FFormatContext& n_OutputContext)
+	const double CInputContext::GetSectionTo() const
 	{
-		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
-		if (!ContextInfo) return;
-
-		std::map<EStreamType, FCodecContext>* mInputCodecContext = m_Context.GetCodecContext();
-		std::map<EStreamType, FCodecContext>* mOutputCodecContext = n_OutputContext.GetCodecContext();
-
-		for (int i = 0; i < (int)EStreamType::EST_Max; i++)
-		{
-			if (ContextInfo->nStreams[i] == -1) continue;
-			if (ContextInfo->eJob == EJob::EJ_AMixBranch &&
-				i == (int)EStreamType::EST_Audio)
-				continue;
-
-			auto itrInput = mInputCodecContext->find((EStreamType)i);
-			if (itrInput == mInputCodecContext->end()) continue;
-
-			auto itrOutput = mOutputCodecContext->find((EStreamType)i);
-			if (itrOutput == mOutputCodecContext->end()) continue;
-
-			// The same codec type, no need to encode
-			if (itrInput->second.m_Context->codec_id ==
-				itrOutput->second.m_Context->codec_id &&
-				ContextInfo->eJob == EJob::EJ_Normal)
-				continue;
-
-			int nPrefix = m_Cache->CreateCache(EStage::ES_Encode,
-				EItemType::EIT_Packet, m_nContextIndex, (EStreamType)i);
-
-			CEncoder* Encoder = new CEncoder(*m_Cache, nPrefix, (EStreamType)i);
-			Encoder->Init(itrOutput->second.m_Context);
-
-			m_vStages->emplace_back(Encoder);
-		}
+		return m_dSectionTo;
 	}
 
-	void CInputContext::CreateTranscoder(FFormatContext& n_OutputContext)
+	const std::string CInputContext::GetName() const
 	{
-		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
-		if (!ContextInfo) return;
-
-		std::map<EStreamType, FCodecContext>* mInputCodecContext = m_Context.GetCodecContext();
-		std::map<EStreamType, FCodecContext>* mOutputCodecContext = n_OutputContext.GetCodecContext();
-
-		for (int i = 0; i < (int)EStreamType::EST_Max; i++)
-		{
-			if (ContextInfo->nStreams[i] == -1) continue;
-
-			auto itrInput = mInputCodecContext->find((EStreamType)i);
-			if (itrInput == mInputCodecContext->end()) continue;
-
-			auto itrOutput = mOutputCodecContext->find((EStreamType)i);
-			if (itrOutput == mOutputCodecContext->end()) continue;
-
-			// The same codec type, no need to decode/encode
-			if (itrInput->second.m_Context->codec_id ==
-				itrOutput->second.m_Context->codec_id &&
-				ContextInfo->eJob == EJob::EJ_Normal)
-				continue;
-
-			int nPrefix = m_Cache->CreateCache(EStage::ES_Encode,
-				EItemType::EIT_Packet, m_nContextIndex, (EStreamType)i);
-			CTranscoder* Transcoder = new CTranscoder(*m_Cache, nPrefix, (EStreamType)i);
-			Transcoder->Init(itrInput->second, itrOutput->second);
-
-			m_vStages->emplace_back(Transcoder);
-		}
+		return m_Context.m_sName;
 	}
 
-	IPlayer* CInputContext::CreatePlayer(IPlayer* n_Player)
+	void CInputContext::SetTask(const ETask n_eTask)
 	{
-		FContextInfo* ContextInfo = m_Cache->GetContextInfo(m_nContextIndex);
-		int nPrefix = m_Cache->CreateCache(EStage::ES_Decode, m_nContextIndex);
-		int nFrameDuration = 40;
+		m_eTask = n_eTask;
+	}
 
-		AVStream* Stream = m_Context.FindStream(AVMediaType::AVMEDIA_TYPE_VIDEO);
-		if (Stream)
-			nFrameDuration = 1000 / Stream->avg_frame_rate.num;
+	const ETask CInputContext::GetTask() const
+	{
+		return m_eTask;
+	}
 
-		if (!n_Player)
+	void CInputContext::MarkStream(EStreamType n_eStreamType, const int n_nStreamIndex)
+	{
+		m_nStreams[(int)n_eStreamType] = n_nStreamIndex;
+	}
+
+	void CInputContext::MarkStream(const int n_nStreams)
+	{
+		if (m_Context.m_sName.empty())
 		{
-			CSDLPlayer* Player = new CSDLPlayer(*m_Cache, nPrefix);
-			Player->Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO, nFrameDuration);
-			n_Player = Player;
+			for (int i = 0; i < (int)EStreamType::ST_Size; i++)
+			{
+				m_nStreams[i] = i;
+			}
 		}
 		else
 		{
-			n_Player->BaseInit(*m_Cache, nPrefix, EStreamType::EST_Max);
+			// It's a valid input file
+			AVStream* Stream = nullptr;
+
+			for (unsigned int i = 0, j = 0; i < m_Context.m_Context->nb_streams; i++)
+			{
+				Stream = m_Context.m_Context->streams[i];
+				if (Stream->codecpar->codec_type != AVMediaType::AVMEDIA_TYPE_UNKNOWN &&
+					Stream->codecpar->codec_id != AVCodecID::AV_CODEC_ID_NONE)
+				{
+					EStreamType eStreamType = MediaType2StreamType(
+						Stream->codecpar->codec_type);
+					if (n_nStreams & (1 << (int)eStreamType))
+					{
+						// The stream index of context should start from 0, but the 
+						// index of stream that we need may not start from 0. 
+						// For example, detach audio stream from input context, 
+						// and then write into output context
+						m_nStreams[(int)eStreamType] = j++;
+					}
+				}
+			}
+		}
+	}
+
+	void CInputContext::UnmarkStream(EStreamType n_eStreamType)
+	{
+		m_nStreams[(int)n_eStreamType] = -1;
+	}
+
+	const int CInputContext::GetStreamIndex(EStreamType n_eStreamType) const
+	{
+		return m_nStreams[(int)n_eStreamType];
+	}
+
+	const int CInputContext::StreamsCode() const
+	{
+		int ret = 0;
+
+		for (int i = 0; i < (int)EStreamType::ST_Size; i++)
+		{
+			if (m_nStreams[i] != -1)
+				ret |= (1 << i);
 		}
 
-		m_vStages->emplace_back(n_Player);
+		return ret;
+	}
 
-		return n_Player;
+	void CInputContext::SetSubnumber(const int n_nSubnumber)
+	{
+		m_nSubnumber = n_nSubnumber;
+	}
+
+	const int CInputContext::GetSubnumber() const
+	{
+		return m_nSubnumber;
+	}
+
+	void CInputContext::SetBatchIndex(const int n_nBatchIndex)
+	{
+		m_nBatchIndex = n_nBatchIndex;
+	}
+
+	const int CInputContext::GetBatchIndex() const
+	{
+		return m_nBatchIndex;
+	}
+
+	void CInputContext::SelectSection(const double n_dStart, 
+		const double n_dDuration /*= 0*/)
+	{
+		double dDuration = m_Context.Duration();
+
+		if (n_dStart > dDuration || n_dStart <= 0)
+			return;
+
+		m_dSectionFrom = n_dStart;
+		if (n_dDuration > 0)
+			m_dSectionTo = m_dSectionFrom + n_dDuration;
+		else
+			m_dSectionTo = dDuration;
+	}
+
+	void CInputContext::WriteFrameDatas(EStreamType n_eStreamType,
+		const void* n_Data, const int& n_nSize)
+	{
+		if (!m_Context.m_sName.empty() || !m_CtxHandle || !m_AVIOHandle)
+			return;
+
+		AVFrame* Frame = nullptr;
+
+		if (n_Data && n_nSize > 0)
+		{
+			AVCodecContext* CodecContext =
+				m_Context.GetCodecContext(n_eStreamType);
+			if (!CodecContext) return;
+
+			if (n_eStreamType == EStreamType::ST_Video)
+			{
+				Frame = WriteVideoFrame(CodecContext, n_Data, n_nSize);
+			}
+			else if (n_eStreamType == EStreamType::ST_Audio)
+			{
+				Frame = WriteAudioFrame(CodecContext, n_Data, n_nSize);
+			}
+		}
+
+		m_AVIOHandle->ReceiveData(n_eStreamType, 
+			Frame, EDataType::DT_Frame, m_nSubnumber);
+	}
+
+	void CInputContext::Release()
+	{
+		CBaseContext::Release();
+	}
+
+	AVFrame* CInputContext::WriteVideoFrame(AVCodecContext* n_CodecContext,
+		const void* n_Data, const int& n_nSize)
+	{
+		AVFrame* Frame = FFrame::VideoFrame(n_CodecContext->width,
+			n_CodecContext->height, n_CodecContext->pix_fmt);
+
+		if (Frame)
+		{
+			m_CtxHandle->FillVideoFrame(Frame, n_Data, n_nSize);
+			Frame->duration = 1;
+			Frame->pts = m_nVideoFrameIndex++;
+		}
+
+		return Frame;
+	}
+
+	AVFrame* CInputContext::WriteAudioFrame(AVCodecContext* n_CodecContext, 
+		const void* n_Data, const int& n_nSize)
+	{
+		AVFrame* Frame = FFrame::AudioFrame(
+			n_CodecContext->frame_size, n_CodecContext->sample_rate,
+			n_CodecContext->sample_fmt, &n_CodecContext->ch_layout);
+
+		if (Frame)
+		{
+			m_CtxHandle->FillAudioFrame(Frame, n_Data, n_nSize);
+			Frame->pts = m_nAudioFramePts;
+			m_nAudioFramePts += Frame->nb_samples;
+		}
+
+		return Frame;
 	}
 
 }

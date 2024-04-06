@@ -2,31 +2,38 @@
 
 namespace aveditor 
 {
+	enum class AVEDITOR_API EDataType
+	{
+		DT_None = 0,
+		DT_Packet,
+		DT_Frame,
+	};
+
 	// What to do with the input context
-	enum class EJob
+	enum class AVEDITOR_API ETask
 	{
 		// merge, cut, cover..
-		EJ_Normal = 0,
+		T_Normal = 0,
 		// will mix other audio
-		EJ_AMixMain,
-		// will mix to other audio
-		EJ_AMixBranch,
+		T_AMixMain,
+		// will be mixed to other audio
+		T_AMixBranch,
 	};
 
-	enum class EStreamType
+	enum class AVEDITOR_API EStreamType
 	{
 		// Video Stream
-		EST_Video = 0,
+		ST_Video = 0,
 		// Audio Stream
-		EST_Audio,
+		ST_Audio,
 		// Subtitle Stream
-		EST_Subtitle,
-		EST_Max
+		ST_Subtitle,
+		ST_Size
 	};
 
-	constexpr auto kStreamVideo = (1 << (int)EStreamType::EST_Video);
-	constexpr auto kStreamAudio = (1 << (int)EStreamType::EST_Audio);
-	constexpr auto kStreamSubtitle = (1 << (int)EStreamType::EST_Subtitle);
+	constexpr auto kStreamVideo = (1 << (int)EStreamType::ST_Video);
+	constexpr auto kStreamAudio = (1 << (int)EStreamType::ST_Audio);
+	constexpr auto kStreamSubtitle = (1 << (int)EStreamType::ST_Subtitle);
 	constexpr auto kStreamVA = kStreamAudio | kStreamVideo;
 	constexpr auto kStreamAll = kStreamVA | kStreamSubtitle;
 
@@ -35,29 +42,14 @@ namespace aveditor
 	constexpr auto kEditorFactor = 100;
 	constexpr auto kEditorIndexFactor = 10;
 
-	enum class AVEDITOR_API EStage
-	{
-		// 解复用
-		ES_Demux = 1,
-		// 解码
-		ES_Decode,
-		// 过滤器
-		ES_Filter,
-		// 编码
-		ES_Encode,
-		// 复用
-		ES_Mux,
-	};
 
-	// Match the stream type and stream
-	const std::map<AVMediaType, EStreamType> kStreamIndex =
+	enum class AVEDITOR_API ECompID
 	{
-		std::pair<AVMediaType, EStreamType>(
-			AVMediaType::AVMEDIA_TYPE_VIDEO, EStreamType::EST_Video),
-		std::pair<AVMediaType, EStreamType>(
-			AVMediaType::AVMEDIA_TYPE_AUDIO, EStreamType::EST_Audio),
-		std::pair<AVMediaType, EStreamType>(
-			AVMediaType::AVMEDIA_TYPE_SUBTITLE, EStreamType::EST_Subtitle)
+		EI_Demux = 0,
+		EI_Decode,
+		EI_Filter,
+		EI_Encode,
+		EI_Muxer,
 	};
 
 	extern "C"
@@ -66,6 +58,10 @@ namespace aveditor
 		AVEDITOR_API void SetupEditorLog();
 		// register all device
 		AVEDITOR_API void SetupEditorDevice();
+		// Cover media type to stream type
+		AVEDITOR_API const EStreamType MediaType2StreamType(const AVMediaType n_eMediaType);
+		// Free AVPacket/AVFrame by DataType
+		AVEDITOR_API void AVFreeData(const EDataType n_eType, void* n_Data);
 	}
 
 	AVEDITOR_API std::string ErrorCode2String(int n_nErrCode);

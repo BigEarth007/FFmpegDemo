@@ -4,53 +4,45 @@
 
 namespace aveditor
 {
-	IStage::IStage(FCache& n_Cache, const int& n_nPrefix,
-		const EStreamType& n_eStreamType)
+	IStage::IStage(CEditor* n_Editor)
 	{
-		BaseInit(n_Cache, n_nPrefix, n_eStreamType);
+		BaseInit(n_Editor);
 	}
 
 	IStage::~IStage()
 	{
-
 	}
 
-	void IStage::BaseInit(FCache& n_Cache, const int& n_nPrefix, 
-		const EStreamType& n_eStreamType)
+	void IStage::BaseInit(CEditor* n_Editor)
 	{
-		m_Cache = &n_Cache;
-		m_nCurrentPrefix = n_nPrefix;
-		m_eStreamType = n_eStreamType;
-
-		m_nPreviousPrefix = m_Cache->GetPreviousKeyPrefix(
-			m_nCurrentPrefix + (int)m_eStreamType);
+		m_Editor = n_Editor;
+		m_AVObject = m_Editor->GetAVObject();
 	}
 
-	int IStage::GetContextIndex()
+	CAVObject* IStage::GetAVObject() const
 	{
-		return m_nCurrentPrefix % kEditorFactor / kEditorIndexFactor;
+		return m_AVObject;
 	}
 
-	void IStage::SetMaxCacheSize(unsigned int n_nMaxCacheSize)
+	void IStage::SetPause(bool n_bPause)
 	{
-		m_nMaxCacheSize = n_nMaxCacheSize;
-	}
-
-	void IStage::ConsumeCache(const int& n_nKey)
-	{
-		if (m_nMaxCacheSize > 0 && m_nMaxCacheSize < m_Cache->Size(n_nKey))
-		{
-			int nMin = m_nMaxCacheSize / 2;
-			while (!IsStop() && m_Cache->Size(n_nKey) > nMin)
-			{
-				Sleep(kSleepDelay * 10);
-			}
-		}
+		m_bPause = n_bPause;
 	}
 
 	void IStage::StageSleep()
 	{
 		//Sleep(kSleepDelay);
+	}
+
+	void IStage::PauseSleep(int n_nMillisecond /*= kSleepDelay * 20*/)
+	{
+		if (m_bPause) Sleep(n_nMillisecond);
+	}
+
+	void IStage::Release()
+	{
+		Stop();
+		Join();
 	}
 
 }

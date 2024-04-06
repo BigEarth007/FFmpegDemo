@@ -25,6 +25,9 @@
     <Filter Include="Editor">
       <UniqueIdentifier>{3adcd39e-0f20-460e-9381-a5772a0fdb30}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component">
+      <UniqueIdentifier>{c0c701d2-194a-4d46-a9e6-7b7ac3b37b9b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -45,9 +48,6 @@
     <ClInclude Include="Util\Thread.h">
       <Filter>Util</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Demuxer.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Apis\FormatContext.h">
       <Filter>Apis</Filter>
     </ClInclude>
@@ -66,41 +66,17 @@
     <ClInclude Include="Apis\Resample.h">
       <Filter>Apis</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Muxer.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Encoder.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Decoder.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Cache.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\QueueItem.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Stage.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Apis\AudioFifo.h">
       <Filter>Apis</Filter>
     </ClInclude>
     <ClInclude Include="Apis\Device.h">
       <Filter>Apis</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Convert.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Editor.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Apis\Filter.h">
       <Filter>Apis</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Filtrate.h">
-      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Editor\BaseContext.h">
       <Filter>Editor</Filter>
@@ -111,17 +87,56 @@
     <ClInclude Include="Editor\OutputContext.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Transcoder.h">
+    <ClInclude Include="Core\Convert.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Apis\Sdl.h">
-      <Filter>Apis</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\SDLPlayer.h">
+    <ClInclude Include="Core\Muxer.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Player.h">
+    <ClInclude Include="Core\Decoder.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Demuxer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Encoder.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Filtrate.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Stage.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\AudioMixComponent.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\AVIOHandle.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\Component.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\DecodeComponent.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\DemuxComponent.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\EncodeComponent.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\MuxerComponent.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Component\AVObject.h">
+      <Filter>Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\AVQueue.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\ContextHandle.h">
+      <Filter>Editor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -136,9 +151,6 @@
     </ClCompile>
     <ClCompile Include="Util\Thread.cpp">
       <Filter>Util</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Demuxer.cpp">
-      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Apis\FormatContext.cpp">
       <Filter>Apis</Filter>
@@ -158,26 +170,8 @@
     <ClCompile Include="Apis\Resample.cpp">
       <Filter>Apis</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Muxer.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Decoder.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Encoder.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="Util\Queue.cpp">
       <Filter>Util</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Cache.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\QueueItem.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Stage.cpp">
-      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Apis\AudioFifo.cpp">
       <Filter>Apis</Filter>
@@ -185,17 +179,11 @@
     <ClCompile Include="Apis\Device.cpp">
       <Filter>Apis</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Convert.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Editor.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Apis\Filter.cpp">
       <Filter>Apis</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Filtrate.cpp">
-      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Editor\BaseContext.cpp">
       <Filter>Editor</Filter>
@@ -206,17 +194,56 @@
     <ClCompile Include="Editor\OutputContext.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Transcoder.cpp">
+    <ClCompile Include="Core\Convert.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Apis\Sdl.cpp">
-      <Filter>Apis</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\SDLPlayer.cpp">
+    <ClCompile Include="Core\Muxer.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Player.cpp">
+    <ClCompile Include="Core\Decoder.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Demuxer.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Encoder.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Filtrate.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Stage.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\AudioMixComponent.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\AVIOHandle.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\Component.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\DecodeComponent.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\DemuxComponent.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\EncodeComponent.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\MuxerComponent.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Component\AVObject.cpp">
+      <Filter>Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\AVQueue.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\ContextHandle.cpp">
+      <Filter>Editor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -6,35 +6,33 @@
 
 namespace aveditor
 {
+	class CEditor;
 	class AVEDITOR_API IStage : public Thread
 	{
 	public:
 		IStage() = default;
-		IStage(FCache& n_Cache, const int& n_nPrefix, 
-			const EStreamType& n_eStreamType);
+		IStage(CEditor* n_Editor);
 		virtual ~IStage();
 
-		void BaseInit(FCache& n_Cache, const int& n_nPrefix,
-			const EStreamType& n_eStreamType);
+		void BaseInit(CEditor* n_Editor);
 
-		int GetContextIndex();
+		CAVObject* GetAVObject() const;
 
-		void SetMaxCacheSize(unsigned int n_nMaxCacheSize);
-
-		// If touch max size, sleep 
-		void ConsumeCache(const int& n_nKey);
+		// Pause Thread
+		void SetPause(bool n_bPause);
 
 		void StageSleep();
 
+		// Sleep while pause
+		void PauseSleep(int n_nMillisecond = kSleepDelay * 20);
+
+		virtual void Release();
+
 	protected:
-		// Buffer queues
-		FCache*			m_Cache = nullptr;
+		CEditor*	m_Editor = nullptr;
 
-		// Max cache size for each stream
-		unsigned int	m_nMaxCacheSize = 80;
+		CAVObject*	m_AVObject = nullptr;
 
-		int				m_nCurrentPrefix = -1;
-		int				m_nPreviousPrefix = -1;
-		EStreamType		m_eStreamType = EStreamType::EST_Max;
+		bool		m_bPause = false;
 	};
 }

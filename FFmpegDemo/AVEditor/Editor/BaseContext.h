@@ -3,31 +3,33 @@
 
 namespace aveditor
 {
+	class CEditor;
 	class AVEDITOR_API CBaseContext
 	{
 	public:
-		CBaseContext(std::vector<IStage*>& n_vStages,
-			FCache& n_Cache, const int n_nContextIndex);
+		CBaseContext(CEditor& n_Editor, const int n_nContextIndex);
 		virtual ~CBaseContext();
 
 		FFormatContext& GetContext();
 
-		virtual CDemuxer* CreateDemuxer() { return nullptr; }
+		// Is this context valid
+		const bool IsValid() const;
 
-		virtual void CreateDecoder() {}
+		const int GetContextIndex() const;
 
-		virtual void CreateEncoder() {}
+		virtual void Release();
 
-		virtual CMuxer* CreateMuxer() { return nullptr; }
+		void SetContextHandle(IContextHandle* n_CtxHandle);
 
-		void Release();
+		void SetAVIOHandle(IAVIOHandle* n_AVIOHandle);
 
 	protected:
 		FFormatContext			m_Context;
+		CEditor*				m_Editor = nullptr;
 
-		std::vector<IStage*>*	m_vStages;
-		// Buffer Queue
-		FCache*					m_Cache = nullptr;
+		IContextHandle*			m_CtxHandle = nullptr;
+		IAVIOHandle*			m_AVIOHandle = nullptr;
+
 		// Index of this format context
 		int						m_nContextIndex = 0;
 	};

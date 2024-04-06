@@ -5,19 +5,29 @@
 namespace aveditor
 {
 	CEditor::CEditor()
-		: m_OutputContext(m_vStages, m_Cache, 0)
+		: m_OutputContext(*this, 0)
 	{
+		m_AVObject.SetEditor(this);
+
+		m_vStages.emplace_back(new CDemuxer(this));
+		m_vStages.emplace_back(new CDecoder(this, EStreamType::ST_Video));
+		m_vStages.emplace_back(new CDecoder(this, EStreamType::ST_Audio));
+		m_vStages.emplace_back(new CFiltrate(this));
+		m_vStages.emplace_back(new CEncoder(this, EStreamType::ST_Video));
+		m_vStages.emplace_back(new CEncoder(this, EStreamType::ST_Audio));
+		m_vStages.emplace_back(new CMuxer(this));
 	}
 
 	CEditor::~CEditor()
 	{
-		Release();
+		Stop();
+		Join();
 	}
 
 	FFormatContext& CEditor::OpenInputFile(
 		const std::string& n_sFileName,
-		const EJob n_eJob /*= EJob::EJ_Normal*/,
-		const int& n_nStream /*= kStreamAll*/,
+		const ETask n_eTask /*= ETask::T_Normal*/,
+		const int& n_nStreams /*= kStreamAll*/,
 		const AVInputFormat* n_InputFormat, 
 		AVDictionary* n_Options)
 	{
@@ -27,11 +37,9 @@ namespace aveditor
 
 		if (!IsStop() && nContextIndex > 0)
 		{
-			auto&	vContextInfo = m_Cache.GetContextInfos();
-
-			for (size_t i = 0;i < vContextInfo.size(); i++)
+			for (size_t i = 0;i < m_vInputContext.size(); i++)
 			{
-				if (vContextInfo[i].sName == n_sFileName)
+				if (m_vInputContext[i]->GetContext().m_sName == n_sFileName)
 				{
 					return m_vInputContext[i]->GetContext();
 				}
@@ -39,50 +47,37 @@ namespace aveditor
 		}
 
 		CInputContext* InputContext = 
-			new CInputContext(m_vStages, m_Cache, nContextIndex);
-		m_vInputContext.emplace_back(InputContext);
+			new CInputContext(*this, nContextIndex);
 
 		FFormatContext& Input = InputContext->OpenInputFile(
 			n_sFileName, n_InputFormat, n_Options);
 
-		// Set input context object
-		FContextInfo ContextInfo;
-		ContextInfo.eJob = n_eJob;
-		ContextInfo.sName = n_sFileName;
+		// Set information of input context
+		InputContext->SetTask(n_eTask);
+		InputContext->MarkStream(n_nStreams);
 
-		if (Input.m_Context)
+		// Batch index
+		int nBatchIndex = GetMaxBatch();
+		switch (n_eTask)
 		{
-			// It's a valid input file
-			AVStream* Stream = nullptr;
+		case ETask::T_Normal:
+			nBatchIndex++;
+			break;
+		case ETask::T_AMixMain:
+		case ETask::T_AMixBranch:
+			{
+				int nCount = 0;
+				int nBatch = GetMaxAudioMixBatch(nCount);
+				if (nBatch == -1) nBatchIndex++;
+				else nBatchIndex = nBatch;
 
-			for (unsigned int i = 0, j = 0; i < Input.m_Context->nb_streams; i++)
-			{
-				Stream = Input.m_Context->streams[i];
-				if (Stream->codecpar->codec_type != AVMediaType::AVMEDIA_TYPE_UNKNOWN &&
-					Stream->codecpar->codec_id != AVCodecID::AV_CODEC_ID_NONE)
-				{
-					EStreamType eStreamType = kStreamIndex.at(
-						Stream->codecpar->codec_type);
-					if (n_nStream & (1 << (int)eStreamType))
-					{
-						// The stream index of context should start from 0, but the 
-						// index of stream that we need may not start from 0. 
-						// For example, detach audio stream from input context, 
-						// and then write into output context
-						ContextInfo.nStreams[(int)eStreamType] = j++;
-					}
-				}
+				InputContext->SetSubnumber(nCount);
 			}
-		}
-		else
-		{
-			for (int i = 0; i < (int)EStreamType::EST_Max; i++)
-			{
-				if (n_nStream & (1 << i)) ContextInfo.nStreams[i] = i;
-			}
+			break;
 		}
 
-		m_Cache.AddContent(ContextInfo);
+		InputContext->SetBatchIndex(nBatchIndex);
+		m_vInputContext.emplace_back(InputContext);
 
 		return Input;
 	}
@@ -107,50 +102,114 @@ namespace aveditor
 		m_OutputContext.CloseOutputFile();
 	}
 
-	FFormatContext& CEditor::GetInputContext(const int& n_nContextIndex)
+	CInputContext* CEditor::GetInputContext(const int& n_nContextIndex)
+	{
+		ThrowExceptionExpr(
+			n_nContextIndex >= m_vInputContext.size() || n_nContextIndex < 0,
+			"Invalid parameter.\n");
+
+		return m_vInputContext[n_nContextIndex];
+	}
+
+	std::vector<int> CEditor::GetInputContextsByBatch(const int& n_nBatchIndex)
+	{
+		std::vector<int> vResult;
+
+		for (int i = 0; i < (int)m_vInputContext.size(); i++)
+		{
+			if (m_vInputContext[i]->GetBatchIndex() == n_nBatchIndex)
+				vResult.push_back(i);
+		}
+
+		return vResult;
+	}
+
+	const size_t CEditor::GetInputSize() const
+	{
+		return m_vInputContext.size();
+	}
+
+	COutputContext* CEditor::GetOutputContext()
+	{
+		return &m_OutputContext;
+	}
+
+	CAVObject* CEditor::GetAVObject()
+	{
+		return &m_AVObject;
+	}
+
+	void CEditor::SetOutputIOHandle(IAVIOHandle* n_Handle)
+	{
+		m_AVObject.SetOutputIOHandle(n_Handle);
+	}
+
+	void CEditor::SetInputContextHandle(IContextHandle* n_Handle, 
+		const int& n_nContextIndex /*= 0*/)
 	{
 		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
 			"Invalid parameter.\n");
 
-		return m_vInputContext[n_nContextIndex]->GetContext();
+		m_vInputContext[n_nContextIndex]->SetContextHandle(n_Handle);
 	}
 
-	FFormatContext& CEditor::GetOutputContext()
-	{
-		return m_OutputContext.GetContext();
-	}
-
-	FCache& CEditor::GetCache()
-	{
-		return m_Cache;
-	}
-
-	void CEditor::SetCallbackFillVideoFrame(
-		std::function<void(AVFrame*, const void*, const int&)> n_func, 
-		const int& n_nContextIndex)
+	void CEditor::SetInputIOHandle(IAVIOHandle* n_Handle, 
+		const int& n_nContextIndex /*= 0*/)
 	{
 		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
-		"Invalid parameter.\n");
+			"Invalid parameter.\n");
 
-		CDemuxer* Demuxer = (CDemuxer*)m_Cache.GetContextInfo(n_nContextIndex)->Demuxer;
-		if (Demuxer)
-		{
-			Demuxer->SetCallbackFillVideoFrame(n_func);
-		}
+		m_vInputContext[n_nContextIndex]->SetAVIOHandle(n_Handle);
 	}
 
-	void CEditor::SetCallbackFillAudioFrame(
-		std::function<void(AVFrame*, const void*, const int&)> n_func, 
-		const int& n_nContextIndex)
+	void CEditor::SetMaxBufferSize(int n_nSize)
+	{
+		m_AVObject.SetMaxBufferSize(n_nSize);
+	}
+
+	const int CEditor::GetMaxBatch() const
+	{
+		int nResult = -1;
+
+		for (size_t i = 0; i < m_vInputContext.size(); i++)
+		{
+			if (m_vInputContext[i]->GetBatchIndex() > nResult)
+				nResult = m_vInputContext[i]->GetBatchIndex();
+		}
+
+		return nResult;
+	}
+
+	const int CEditor::GetMaxAudioMixBatch(int& n_nCount) const
+	{
+		int nResult = -1;
+
+		for (size_t i = 0; i < m_vInputContext.size(); i++)
+		{
+			if (m_vInputContext[i]->GetTask() != ETask::T_AMixMain &&
+				m_vInputContext[i]->GetTask() != ETask::T_AMixBranch)
+				continue;
+
+			if (m_vInputContext[i]->GetBatchIndex() > nResult)
+			{
+				// a larger batch index, then count starts from 1;
+				nResult = m_vInputContext[i]->GetBatchIndex();
+				n_nCount = 1;
+			}
+			else if(m_vInputContext[i]->GetBatchIndex() == nResult)
+				n_nCount++;
+		}
+
+		return nResult;
+	}
+
+	void CEditor::SelectSection(const double n_dStart,
+		const double n_dDuration /*= 0*/, const int& n_nContextIndex /*= 0*/)
 	{
 		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
-		"Invalid parameter.\n");
+			"Invalid parameter.\n");
 
-		CDemuxer* Demuxer = (CDemuxer*)m_Cache.GetContextInfo(n_nContextIndex)->Demuxer;
-		if (Demuxer)
-		{
-			Demuxer->SetCallbackFillAudioFrame(n_func);
-		}
+		m_vInputContext[n_nContextIndex]->SelectSection(n_dStart, n_dDuration);
 	}
 
 	void CEditor::WriteFrameDatas(EStreamType n_eStreamType, 
@@ -159,77 +218,8 @@ namespace aveditor
 		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
 			"Invalid parameter.\n");
 
-		CDemuxer* Demuxer = (CDemuxer*)m_Cache.GetContextInfo(n_nContextIndex)->Demuxer;
-		if (Demuxer)
-		{
-			Demuxer->WriteFrameDatas(n_eStreamType, n_Data, n_nSize);
-		}
-	}
-
-	void CEditor::CreateDemuxer()
-	{
-		std::vector<FContextInfo>& vContextInfos = m_Cache.GetContextInfos();
-		for (size_t i = 0; i < m_vInputContext.size(); i++)
-		{
-			CDemuxer* Muxer = m_vInputContext[i]->CreateDemuxer(m_OutputContext.GetContext());
-			vContextInfos[i].Demuxer = Muxer;
-		}
-	}
-
-	void CEditor::CreateDecoder()
-	{
-		for (size_t i = 0; i < m_vInputContext.size(); i++)
-			m_vInputContext[i]->CreateDecoder(m_OutputContext.GetContext());
-	}
-
-	void CEditor::CreateFilter(EStreamType n_eStreamType)
-	{
-		int nPrefix = 0;
-		int nFilterIndex = 0;
-		std::vector<FContextInfo>& vContextInfos = m_Cache.GetContextInfos();
-
-		for (size_t i = 0; i < vContextInfos.size(); i++)
-		{
-			if (vContextInfos[i].eJob == EJob::EJ_AMixMain)
-			{
-				nPrefix = m_Cache.CreateCache(EStage::ES_Filter,
-					EItemType::EIT_Frame, (int)i, n_eStreamType);
-
-				vContextInfos[i].nFilterIndex = nFilterIndex++;
-			}
-			else if (vContextInfos[i].eJob == EJob::EJ_AMixBranch)
-				vContextInfos[i].nFilterIndex = nFilterIndex++;
-		}
-
-		if (nPrefix == 0) return;
-
-		std::map<EStreamType, FCodecContext>* mOutputCodecContext =
-			m_OutputContext.GetContext().GetCodecContext();
-
-		auto itr = mOutputCodecContext->find(n_eStreamType);
-		if (itr == mOutputCodecContext->end()) return;
-
-		CFiltrate* Filtrate = new CFiltrate(m_Cache, nPrefix, n_eStreamType);
-		Filtrate->Init(itr->second);
-
-		m_vStages.emplace_back(Filtrate);
-	}
-
-	void CEditor::CreateEncoder()
-	{
-		for (size_t i = 0; i < m_vInputContext.size(); i++)
-			m_vInputContext[i]->CreateEncoder(m_OutputContext.GetContext());
-	}
-
-	void CEditor::CreateTranscoder()
-	{
-		for (size_t i = 0; i < m_vInputContext.size(); i++)
-			m_vInputContext[i]->CreateTranscoder(m_OutputContext.GetContext());
-	}
-
-	void CEditor::CreateMuxer()
-	{
-		m_OutputContext.CreateMuxer();
+		m_vInputContext[n_nContextIndex]->WriteFrameDatas(
+			n_eStreamType, n_Data, n_nSize);
 	}
 
 	void CEditor::Start()
@@ -244,136 +234,125 @@ namespace aveditor
 		}
 	}
 
-	void CEditor::Run()
-	{
-		StartEdit();
-
-		m_eStatus = EEditStatus::ES_Running;
-
-		JoinEdit();
-
-		m_eStatus = EEditStatus::ES_Stopping;
-
-		Release();
-
-		m_eStatus = EEditStatus::ES_Stopped;
-
-		Thread::Run();
-	}
-
-	void CEditor::Stop()
-	{
-		StopEdit();
-	}
-
 	bool CEditor::IsStop()
 	{
 		return Thread::IsStop() && m_eStatus == EEditStatus::ES_Stopped;
 	}
 
-	IPlayer* CEditor::CreatePlayer(IPlayer* n_Player)
-	{
-		ThrowExceptionExpr(m_vInputContext.size() == 0, "No input context.\n");
-
-		if (!IsStop()) return n_Player;
-		CreateDemuxer();
-		CreateDecoder();
-
-		return m_vInputContext[0]->CreatePlayer(n_Player);
-	}
-
-	void CEditor::SetMaxCacheSize(int n_nIndex, unsigned int n_nMaxCacheSize)
-	{
-		for (size_t i = 0; i < m_vStages.size(); i++)
-		{
-			if (n_nIndex == -1 || i == n_nIndex)
-				m_vStages[i]->SetMaxCacheSize(n_nMaxCacheSize); 
-		}
-	}
-
-	void CEditor::CreateAllStage()
-	{
-		if (!IsStop()) return;
-
-		CreateDemuxer();
-
-		if (GetOutputContext().m_Context)
-		{
-			bool bFilter = false;
-			std::vector<FContextInfo>& vContextInfos = m_Cache.GetContextInfos();
-
-			for (size_t i = 0; i < vContextInfos.size(); i++)
-			{
-				if (vContextInfos[i].eJob == EJob::EJ_AMixMain ||
-					vContextInfos[i].eJob == EJob::EJ_AMixBranch)
-				{
-					bFilter = true;
-					break;
-				}
-			}
-
-			if (bFilter)
-			{
-				CreateDecoder();
-				CreateFilter(EStreamType::EST_Audio);
-				CreateEncoder();
-			}
-			else
-				CreateTranscoder();
-
-			CreateMuxer();
-		}
-	}
-
-	EEditStatus CEditor::GetStstua()
+	EEditStatus CEditor::GetStatus() const
 	{
 		return m_eStatus;
 	}
 
-	void CEditor::StartEdit()
+	void CEditor::Run()
 	{
-		for (size_t i = 0; i < m_vStages.size(); i++)
-			m_vStages[i]->Start();
-	}
-
-	void CEditor::StopEdit()
-	{
-		for (size_t i = 0; i < m_vStages.size(); i++)
-			m_vStages[i]->Stop();
-	}
-
-	bool CEditor::IsAllStopped()
-	{
-		bool bResult = true;
-		for (size_t i = 0; i < m_vStages.size(); i++)
+		try
 		{
-			if (!m_vStages[i]->IsStop())
+			CheckSelectedStreams();
+
+			m_eStatus = EEditStatus::ES_Running;
+
+			int nMaxBatch = GetMaxBatch();
+			int nBatch = 0;
+
+			m_AVObject.Init();
+			m_AVObject.StartBatch(nBatch);
+			SetStagesStart(true);
+
+			while (!Thread::IsStop())
 			{
-				bResult = false;
-				break;
+				if (m_AVObject.IsBatchEnd())
+				{
+					nBatch++;
+					if (nBatch > nMaxBatch)
+						break;
+
+					m_AVObject.StartBatch(nBatch);
+					SetStagesStart(true);
+				}
+
+				Sleep(kSleepDelay * 50);
 			}
+
+			m_AVObject.SetEndFlag(true);
+			SetStagesStart(false);
+			JoinStages();
+
+			m_eStatus = EEditStatus::ES_Stopping;
+
+			for (size_t i = 0; i < m_vInputContext.size(); i++)
+			{
+				if (!m_vInputContext[i]->IsValid())
+				{
+					WriteFrameDatas(EStreamType::ST_Video, nullptr, 0, (int)i);
+					WriteFrameDatas(EStreamType::ST_Audio, nullptr, 0, (int)i);
+				}
+			}
+
+			m_AVObject.Release();
+			Release();
+
+			m_eStatus = EEditStatus::ES_Stopped;
+		}
+		catch (const std::exception& e)
+		{
+			DebugLog(e.what());
 		}
 
-		return bResult;
+		Thread::Stop();
 	}
 
-	void CEditor::JoinEdit()
+	void CEditor::CheckSelectedStreams()
+	{
+		int nMaxBatch = GetMaxBatch();
+		int nOutputStreams = m_OutputContext.StreamsCode();
+
+		for (int i = 0; i <= nMaxBatch; i++)
+		{
+			int nCode = 0;
+			auto v = GetInputContextsByBatch(i);
+			for (size_t j = 0; j < v.size(); j++)
+			{
+				nCode |= GetInputContext(v[j])->StreamsCode();
+			}
+
+			ThrowExceptionExpr(nOutputStreams != nCode,
+				"Selected streams for input/output context are not match");
+		}
+	}
+
+	void CEditor::SetStagesStart(bool n_bStart)
 	{
 		for (size_t i = 0; i < m_vStages.size(); i++)
+		{
+			if (n_bStart && m_vStages[i]->IsStop())
+				m_vStages[i]->Start();
+			else if (!n_bStart && !m_vStages[i]->IsStop())
+				m_vStages[i]->Stop();
+		}
+	}
+
+	void CEditor::SetStagesPause(bool n_bPause)
+	{
+		for (size_t i = 0; i < m_vStages.size(); i++)
+		{
+			m_vStages[i]->SetPause(n_bPause);
+		}
+	}
+
+	void CEditor::JoinStages()
+	{
+		for (size_t i = 0; i < m_vStages.size(); i++)
+		{
 			m_vStages[i]->Join();
+		}
 	}
 
 	void CEditor::Release()
 	{
-		StopEdit();
-		JoinEdit();
-
-		ReleaseVector(m_vStages);
 		CloseOutputFile();
 		m_OutputContext.Release();
 		ReleaseVector(m_vInputContext);
-
-		m_Cache.Release();
 	}
 
 }

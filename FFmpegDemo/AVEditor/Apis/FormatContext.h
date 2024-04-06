@@ -24,6 +24,9 @@ namespace aveditor
 		// The length of the context
 		const double Duration();
 
+		// Is this context valid
+		const bool IsValid() const;
+
 		// Get stream
 		AVStream* FindStream(unsigned int n_nStreamIndex);
 		// Get stream by media type: n_eMediaType
@@ -69,10 +72,10 @@ namespace aveditor
 		bool IsSupportBFrame();
 		// Open codec context; 
 		// If n_eStreamType == EStreamType::EST_Max, open all the codec context
-		void OpenCodecContext(const EStreamType n_eStreamType = EStreamType::EST_Max);
+		void OpenCodecContext(const EStreamType n_eStreamType = EStreamType::ST_Size);
 		// Close codec context; 
 		// If n_eStreamType == EStreamType::EST_Max, close all the codec context
-		void CloseCodecContext(const EStreamType n_eStreamType = EStreamType::EST_Max);
+		void CloseCodecContext(const EStreamType n_eStreamType = EStreamType::ST_Size);
 
 		AVRational GetCodecContextTimeBase(unsigned int n_nStreamIndex);
 		AVRational GetCodecContextTimeBase(const EStreamType n_eStreamType);
@@ -82,6 +85,9 @@ namespace aveditor
 
 		/* Codec Context of every stream */ 
 		std::map<EStreamType, FCodecContext>	m_mCodecContext;
+
+		// File Name
+		std::string								m_sName;
 
 	protected:
 		// Addition setting for codec context

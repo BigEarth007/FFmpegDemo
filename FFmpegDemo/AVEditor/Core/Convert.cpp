@@ -4,123 +4,173 @@
 
 namespace aveditor
 {
-	CConvert::CConvert()
+	IFrameConvert::IFrameConvert()
 	{
 	}
 
-	CConvert::~CConvert()
-	{
-		Release();
-	}
-
-	void CConvert::Init(FCodecContext& n_InputCodecContext, 
-		FCodecContext& n_OutputCodecContext)
+	IFrameConvert::~IFrameConvert()
 	{
 		Release();
-
-		m_OutputCodecContext = n_OutputCodecContext.m_Context;
-		CreateConverter(n_InputCodecContext, n_OutputCodecContext);
-		CreateAudioFifo(n_InputCodecContext, n_OutputCodecContext);
 	}
 
-	int CConvert::Process(AVFrame* n_Frame, const int& n_nKey)
+	void IFrameConvert::Init(FCodecContext* n_InputCodecContext,
+		FCodecContext* n_OutputCodecContext)
 	{
-		if (!m_Cale.m_Context &&
-			!m_Resample.m_Context &&
-			!m_AudioFifo.m_Context)
-		{
-			FinishedConvert(n_Frame, n_nKey);
-			return 0;
-		}
+		Release();
 
-		VideoFrame(n_Frame, n_nKey);
-		AudioFrame(n_Frame, n_nKey);
+		ThrowExceptionExpr(!n_InputCodecContext || !n_InputCodecContext->m_Context, 
+			"Invalid input codec.\n");
+		ThrowExceptionExpr(!n_OutputCodecContext || !n_OutputCodecContext->m_Context, 
+			"Invalid output codec.\n");
 
-		return 1;
+		m_OutputCodecContext = n_OutputCodecContext->m_Context;
 	}
 
-	void CConvert::CleanAudioFifo(const int& n_nKey)
+	int IFrameConvert::Process(AVFrame* n_Frame)
 	{
-		while (m_AudioFifo.Size() > 0)
-		{
-			PopFromFifo(n_nKey);
-		}
+		return 0;
 	}
 
-	void CConvert::SetFinishedCallback(std::function<int(AVFrame*, const int&)> n_func)
+	void IFrameConvert::CleanCache()
+	{
+
+	}
+
+	const bool IFrameConvert::IsValid() const
+	{
+		return false;
+	}
+
+	void IFrameConvert::SetFinishedCallback(std::function<int(AVFrame*)> n_func)
 	{
 		m_funcFinished = n_func;
 	}
 
-	void CConvert::Release()
+	void IFrameConvert::Release()
+	{
+	}
+
+	void IFrameConvert::FinishedConvert(AVFrame* n_Frame)
+	{
+		if (m_funcFinished) m_funcFinished(n_Frame);
+	}
+
+	AVEDITOR_API int CompareCodecFormat(AVCodecContext* n_InputCodecContext, 
+		AVCodecContext* n_OutputCodecContext)
+	{
+		int ret = -1;
+		if (n_InputCodecContext->codec_type != n_OutputCodecContext->codec_type)
+			return ret;
+
+		if (n_InputCodecContext->codec_id != n_OutputCodecContext->codec_id)
+			return ret;
+
+		if (n_InputCodecContext->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO)
+		{
+			if (n_InputCodecContext->width == n_OutputCodecContext->width &&
+				n_InputCodecContext->height == n_OutputCodecContext->height &&
+				n_InputCodecContext->pix_fmt == n_OutputCodecContext->pix_fmt)
+			{
+				ret = 0;
+			}
+		}
+		else if (n_InputCodecContext->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
+		{
+			if (n_InputCodecContext->sample_fmt == n_OutputCodecContext->sample_fmt &&
+				n_InputCodecContext->sample_rate == n_OutputCodecContext->sample_rate &&
+				n_InputCodecContext->ch_layout.nb_channels ==
+				n_OutputCodecContext->ch_layout.nb_channels)
+			{
+				ret = 0;
+			}
+		}
+
+		return ret;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	CVideoConvert::CVideoConvert()
+	{
+	}
+
+	CVideoConvert::~CVideoConvert()
+	{
+		Release();
+	}
+
+	void CVideoConvert::Init(FCodecContext* n_InputCodecContext,
+		FCodecContext* n_OutputCodecContext)
+	{
+		IFrameConvert::Init(n_InputCodecContext, n_OutputCodecContext);
+
+		CreateConverter(n_InputCodecContext, n_OutputCodecContext);
+	}
+
+	int CVideoConvert::Process(AVFrame* n_Frame)
+	{
+		if (!n_Frame || !m_Cale.m_Context)
+		{
+			FinishedConvert(n_Frame);
+			return 0;
+		}
+
+		Converting(n_Frame);
+
+		return 1;
+	}
+
+	const bool CVideoConvert::IsValid() const
+	{
+		return m_Cale.m_Context;
+	}
+
+	void CVideoConvert::Release()
 	{
 		m_Cale.Release();
-		m_Resample.Release();
-		m_AudioFifo.Release();
 	}
 
-	void CConvert::CreateConverter(FCodecContext& n_InputCodecContext,
-		FCodecContext& n_OutputCodecContext)
+	void CVideoConvert::CreateConverter(FCodecContext* n_InputCodecContext,
+		FCodecContext* n_OutputCodecContext)
 	{
-		if (!n_OutputCodecContext.m_Context) return;
+		if (!n_OutputCodecContext) return;
 
-		AVCodecContext* InputContext = n_InputCodecContext.m_Context;
-		AVCodecContext* OutputContext = n_OutputCodecContext.m_Context;
+		AVCodecContext* Input = n_InputCodecContext->m_Context;
+		AVCodecContext* Output = n_OutputCodecContext->m_Context;
 
-		if (OutputContext->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO)
+		if (Input->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO)
 		{
-			// Maybe it's a hardware decoder
-			AVPixelFormat PixelFormat = InputContext->pix_fmt;
-			if (InputContext->hw_device_ctx)
+			if (Input->codec_id != Output->codec_id ||
+				Input->width != Output->width ||
+				Input->height != Output->height ||
+				n_OutputCodecContext->GetRealPixelFormat() != Output->pix_fmt)
 			{
-				if (*(AVPixelFormat*)InputContext->opaque == 
-					AVPixelFormat::AV_PIX_FMT_D3D11)
-					PixelFormat = AVPixelFormat::AV_PIX_FMT_NV12;
-			}
+				// Maybe it's a hardware decoder
+				AVPixelFormat PixelFormat = Input->pix_fmt;
+				if (Input->hw_device_ctx)
+				{
+					if (*(AVPixelFormat*)Input->opaque ==
+						AVPixelFormat::AV_PIX_FMT_D3D11)
+						PixelFormat = AVPixelFormat::AV_PIX_FMT_NV12;
+				}
 
-			if (InputContext->width != OutputContext->width ||
-				InputContext->height != OutputContext->height ||
-				PixelFormat != OutputContext->pix_fmt)
-			{
 				m_Cale.Alloc(
-					InputContext->width, InputContext->height, PixelFormat, 
-					OutputContext->width, OutputContext->height, OutputContext->pix_fmt);
-			}
-		}
-		else if (OutputContext->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
-		{
-			if (InputContext->sample_fmt != OutputContext->sample_fmt ||
-				InputContext->sample_rate != OutputContext->sample_rate ||
-				InputContext->ch_layout.nb_channels != OutputContext->ch_layout.nb_channels)
-			{
-				m_Resample.Alloc(InputContext, OutputContext);
+					Input->width,
+					Input->height,
+					PixelFormat,
+					Output->width,
+					Output->height,
+					Output->pix_fmt);
 			}
 		}
 	}
 
-	void CConvert::CreateAudioFifo(FCodecContext& n_InputCodecContext,
-		FCodecContext& n_OutputCodecContext)
-	{
-		if (!n_OutputCodecContext.m_Context) return;
-
-		AVCodecContext* InputContext = n_InputCodecContext.m_Context;
-		AVCodecContext* OutputContext = n_OutputCodecContext.m_Context;
-
-		if (OutputContext->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
-			InputContext->frame_size == OutputContext->frame_size)
-			return;
-
-		m_AudioFifo.Alloc(OutputContext->sample_fmt, 
-			OutputContext->ch_layout.nb_channels, OutputContext->frame_size);
-	}
-
-	void CConvert::VideoFrame(AVFrame* n_Frame, const int& n_nKey)
+	void CVideoConvert::Converting(AVFrame* n_Frame)
 	{
 		if (!m_Cale.m_Context) return;
 
 		AVFrame* Frame = FFrame::VideoFrame(
-			m_Cale.GetOutputWidth(), 
-			m_Cale.GetOutputHeight(), 
+			m_Cale.GetOutputWidth(),
+			m_Cale.GetOutputHeight(),
 			m_Cale.GetOutputPixelFormat());
 
 		m_Cale.Cale((const uint8_t**)n_Frame->data, n_Frame->linesize,
@@ -129,10 +179,99 @@ namespace aveditor
 		Frame->pts = n_Frame->pts;
 		//LogInfo("Video frame: %zd.\n", Frame->pts);
 
-		FinishedConvert(Frame, n_nKey);
+		FinishedConvert(Frame);
 	}
 
-	void CConvert::AudioFrame(AVFrame* n_Frame, const int& n_nKey)
+	//////////////////////////////////////////////////////////////////////////
+	CAudioConvert::CAudioConvert()
+	{
+	}
+
+	CAudioConvert::~CAudioConvert()
+	{
+		Release();
+	}
+
+	void CAudioConvert::Init(FCodecContext* n_InputCodecContext,
+		FCodecContext* n_OutputCodecContext)
+	{
+		IFrameConvert::Init(n_InputCodecContext, n_OutputCodecContext);
+
+		CreateConverter(n_InputCodecContext, n_OutputCodecContext);
+		CreateAudioFifo(n_InputCodecContext, n_OutputCodecContext);
+	}
+
+	int CAudioConvert::Process(AVFrame* n_Frame)
+	{
+		if (!n_Frame || (!m_Resample.m_Context && !m_AudioFifo.m_Context))
+		{
+			FinishedConvert(n_Frame);
+			return 0;
+		}
+
+		Converting(n_Frame);
+
+		return 1;
+	}
+
+	const bool CAudioConvert::IsValid() const
+	{
+		return m_Resample.m_Context || m_AudioFifo.m_Context;
+	}
+
+	void CAudioConvert::CleanCache()
+	{
+		while (m_AudioFifo.Size() > 0)
+		{
+			PopFromFifo();
+		}
+	}
+
+	void CAudioConvert::Release()
+	{
+		m_Resample.Release();
+		m_AudioFifo.Release();
+	}
+
+	void CAudioConvert::CreateConverter(FCodecContext* n_InputCodecContext,
+		FCodecContext* n_OutputCodecContext)
+	{
+		if (!n_OutputCodecContext) return;
+
+		AVCodecContext* Input = n_InputCodecContext->m_Context;
+		AVCodecContext* Output = n_OutputCodecContext->m_Context;
+
+		if (Input->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
+		{
+			if (Input->codec_id != Output->codec_id ||
+				Input->sample_fmt != Output->sample_fmt ||
+				Input->sample_rate != Output->sample_rate ||
+				Input->ch_layout.nb_channels != 
+				Output->ch_layout.nb_channels)
+			{
+				m_Resample.Alloc(Input, Output);
+			}
+		}
+	}
+
+	void CAudioConvert::CreateAudioFifo(FCodecContext* n_InputCodecContext,
+		FCodecContext* n_OutputCodecContext)
+	{
+		if (!n_OutputCodecContext) return;
+
+		AVCodecContext* Input = n_InputCodecContext->m_Context;
+		AVCodecContext* Output = n_OutputCodecContext->m_Context;
+
+		if (Input->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
+			Input->frame_size == Output->frame_size)
+			return;
+
+		m_AudioFifo.Alloc(Output->sample_fmt,
+			Output->ch_layout.nb_channels,
+			Output->frame_size);
+	}
+
+	void CAudioConvert::Converting(AVFrame* n_Frame)
 	{
 		if (m_AudioFifo.m_Context)
 		{
@@ -149,7 +288,7 @@ namespace aveditor
 
 			while (m_AudioFifo.IsReadable())
 			{
-				PopFromFifo(n_nKey);
+				PopFromFifo();
 			}
 		}
 		else
@@ -157,9 +296,9 @@ namespace aveditor
 			if (!m_Resample.m_Context) return;
 
 			AVFrame* Frame = FFrame::AudioFrame(
-				m_OutputCodecContext->frame_size, 
+				m_OutputCodecContext->frame_size,
 				m_Resample.GetOutputSampleRate(),
-				m_Resample.GetOutputSampleFormat(), 
+				m_Resample.GetOutputSampleFormat(),
 				&m_OutputCodecContext->ch_layout);
 
 			Frame->pts = m_nAudioFramePts;
@@ -170,11 +309,11 @@ namespace aveditor
 			m_Resample.Cover((const uint8_t**)n_Frame->extended_data,
 				n_Frame->nb_samples, Frame->data, Frame->nb_samples);
 
-			FinishedConvert(Frame, n_nKey);
+			FinishedConvert(Frame);
 		}
 	}
 
-	void CConvert::PopFromFifo(const int& n_nKey)
+	void CAudioConvert::PopFromFifo()
 	{
 		int nSampleSize = m_AudioFifo.NextSampleCount();
 		if (nSampleSize <= 0) return;
@@ -191,12 +330,7 @@ namespace aveditor
 
 		//LogInfo("Audio frame: %zd.\n", Frame->pts);
 
-		FinishedConvert(Frame, n_nKey);
-	}
-
-	void CConvert::FinishedConvert(AVFrame* n_Frame, const int& n_nKey)
-	{
-		if (m_funcFinished) m_funcFinished(n_Frame, n_nKey);
+		FinishedConvert(Frame);
 	}
 
 }

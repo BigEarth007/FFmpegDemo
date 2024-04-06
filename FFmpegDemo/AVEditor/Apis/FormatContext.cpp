@@ -20,6 +20,8 @@ namespace aveditor
 		ThrowExceptionCodeExpr(ret < 0, ret, 
 			"Fail to find stream info about the input file.");
 
+		m_sName = n_sFile;
+
 		return m_Context;
 	}
 
@@ -32,6 +34,8 @@ namespace aveditor
 		int ret = avformat_alloc_output_context2(&m_Context, n_OutputFormat, 
 			n_szFormatName, n_sFile.c_str());
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to alloc output file.");
+
+		m_sName = n_sFile;
 
 		return m_Context;
 	}
@@ -64,6 +68,11 @@ namespace aveditor
 	const double FFormatContext::Duration()
 	{
 		return m_Context ? m_Context->duration * 1.0 / AV_TIME_BASE : 0;
+	}
+
+	const bool FFormatContext::IsValid() const
+	{
+		return !m_sName.empty() && m_Context;
 	}
 
 	AVStream* FFormatContext::FindStream(unsigned int n_nStreamIndex)
@@ -128,7 +137,7 @@ namespace aveditor
 
 			InputStream = n_InputContext.FindStream(n_eMediaType);
 			if (InputStream &&
-				InputStream->codecpar->codec_type == n_eCodecID)
+				InputStream->codecpar->codec_id == n_eCodecID)
 			{
 				BuildEncodeCodecContext(InputStream);
 			}
@@ -145,21 +154,21 @@ namespace aveditor
 
 			switch (itr->first)
 			{
-			case aveditor::EStreamType::EST_Video:
+			case aveditor::EStreamType::ST_Video:
 			{
 				func(AVMediaType::AVMEDIA_TYPE_VIDEO,
 					m_Context->oformat->video_codec,
 					itr->second.m_Context);
 			}
 				break;
-			case aveditor::EStreamType::EST_Audio:
+			case aveditor::EStreamType::ST_Audio:
 			{
 				func(AVMediaType::AVMEDIA_TYPE_AUDIO,
 					m_Context->oformat->audio_codec,
 					itr->second.m_Context);
 			}
 				break;
-			case aveditor::EStreamType::EST_Subtitle:
+			case aveditor::EStreamType::ST_Subtitle:
 			{
 				func(AVMediaType::AVMEDIA_TYPE_SUBTITLE,
 					m_Context->oformat->subtitle_codec,
@@ -171,12 +180,9 @@ namespace aveditor
 			if (InputStream)
 			{
 				m_mCodecContext[itr->first].CopyAdditionParameter(InputStream);
-				BuildStream(InputStream);
 			}
-			else
-			{
-				BuildStream(m_mCodecContext[itr->first]);
-			}
+
+			BuildStream(m_mCodecContext[itr->first]);
 		}
 
 		return &m_mCodecContext;
@@ -209,7 +215,7 @@ namespace aveditor
 		for (unsigned int i = 0;i < m_Context->nb_streams; i++)
 		{
 			AVStream* Stream = m_Context->streams[i];
-			EStreamType eStreamType = kStreamIndex.at(Stream->codecpar->codec_type);
+			EStreamType eStreamType = MediaType2StreamType(Stream->codecpar->codec_type);
 
 			auto itr = m_mCodecContext.find(eStreamType);
 			if (itr != m_mCodecContext.end())
@@ -267,7 +273,7 @@ namespace aveditor
 			"You should initialize AVFormatContext first.\n");
 
 		AVStream* Stream = nullptr;
-		EStreamType eStreamType = EStreamType::EST_Max;
+		EStreamType eStreamType = EStreamType::ST_Size;
 
 		for (unsigned int i = 0; i < m_Context->nb_streams; i++)
 		{
@@ -278,7 +284,7 @@ namespace aveditor
 				const AVCodec* Codec = FCodecContext::FindDecodeCodec(
 					Stream->codecpar->codec_id);
 
-				eStreamType = kStreamIndex.at(Stream->codecpar->codec_type);
+				eStreamType = MediaType2StreamType(Stream->codecpar->codec_type);
 				AVCodecContext* ctx = m_mCodecContext[eStreamType].Alloc(Codec);
 				m_mCodecContext[eStreamType].CopyCodecParameter(Stream);
 				ctx->pkt_timebase = ctx->time_base;
@@ -330,7 +336,7 @@ namespace aveditor
 	{
 		const AVCodec* Codec = FCodecContext::FindEncodeCodec(n_eCodecID);
 
-		EStreamType eStreamType = kStreamIndex.at(Codec->type);
+		EStreamType eStreamType = MediaType2StreamType(Codec->type);
 		AVCodecContext* ctx = m_mCodecContext[eStreamType].Alloc(Codec);
 
 		if (n_InputCodecContext)
@@ -363,7 +369,7 @@ namespace aveditor
 	{
 		const AVCodec* Codec = FCodecContext::FindEncodeCodec(n_Stream->codecpar->codec_id);
 
-		EStreamType eStreamType = kStreamIndex.at(Codec->type);
+		EStreamType eStreamType = MediaType2StreamType(Codec->type);
 		AVCodecContext* ctx = m_mCodecContext[eStreamType].Alloc(Codec);
 
 		m_mCodecContext[eStreamType].CopyCodecParameter(n_Stream);
@@ -393,7 +399,7 @@ namespace aveditor
 	{
 		if (!m_Context) return false;
 
-		auto itr = m_mCodecContext.find(EStreamType::EST_Video);
+		auto itr = m_mCodecContext.find(EStreamType::ST_Video);
 		if (itr == m_mCodecContext.end()) return false;
 
 		return itr->second.m_Context->codec->capabilities & AV_CODEC_CAP_DELAY;
@@ -403,7 +409,7 @@ namespace aveditor
 	{
 		for (auto itr = m_mCodecContext.begin(); itr != m_mCodecContext.end(); itr++)
 		{
-			if (n_eStreamType == EStreamType::EST_Max || n_eStreamType == itr->first)
+			if (n_eStreamType == EStreamType::ST_Size || n_eStreamType == itr->first)
 			{
 				itr->second.Open();
 			}
@@ -414,7 +420,7 @@ namespace aveditor
 	{
 		for (auto itr = m_mCodecContext.begin(); itr != m_mCodecContext.end(); itr++)
 		{
-			if (n_eStreamType == EStreamType::EST_Max || n_eStreamType == itr->first)
+			if (n_eStreamType == EStreamType::ST_Size || n_eStreamType == itr->first)
 			{
 				itr->second.Close();
 			}
@@ -427,7 +433,7 @@ namespace aveditor
 
 		if (Stream)
 		{
-			EStreamType eStreamType = kStreamIndex.at(Stream->codecpar->codec_type);
+			EStreamType eStreamType = MediaType2StreamType(Stream->codecpar->codec_type);
 			auto itr = m_mCodecContext.find(eStreamType);
 			if (itr != m_mCodecContext.end())
 				return itr->second.m_Context->time_base;
