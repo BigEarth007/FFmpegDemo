@@ -124,21 +124,12 @@ namespace aveditor
 		return m_MuxerComp.GetEndFlag();
 	}
 
-	void CAVObject::SetEndFlag(bool n_bEnd)
+	void CAVObject::SetEndFlag()
 	{
 		for (size_t i = 0; i < m_vDemuxComp.size(); i++)
 		{
-			m_vDemuxComp[i]->SetEndFlag(n_bEnd);
+			m_vDemuxComp[i]->WriteEndData();
 		}
-
-		for (size_t i = 0; i < m_vDecodeComp.size(); i++)
-		{
-			m_vDecodeComp[i]->SetEndFlag(n_bEnd);
-		}
-
-		m_AudioMixComp.SetEndFlag(n_bEnd);
-		m_EncodeComp.SetEndFlag(n_bEnd);
-		m_MuxerComp.SetEndFlag(n_bEnd);
 	}
 
 	void CAVObject::SetMaxBufferSize(int n_nSize)

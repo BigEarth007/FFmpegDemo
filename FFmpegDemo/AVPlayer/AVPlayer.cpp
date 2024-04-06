@@ -50,7 +50,8 @@ void AVPlayer::Init()
 
 int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataType n_eType, int n_nIndex)
 {
-	if (!n_Data) return 0;
+	if (!n_Data) 
+		return 0;
 	// play frame
 	// ...
 	DebugLog("Output frame %d, Type %d\n", n_eStreamType, n_eType);

@@ -43,15 +43,7 @@ namespace aveditor
 			ret = InputContext->GetContext().ReadPacket(Packet);
 			if (ret < 0)
 			{
-				for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
-				{
-					if (InputContext->GetStreamIndex((EStreamType)i) != -1)
-					{
-						WriteData((EStreamType)i, nullptr,
-							EDataType::DT_Packet, InputContext->GetSubnumber());
-					}
-				}
-
+				WriteEndData();
 				SetEndFlag(true);
 				break;
 			}
@@ -153,6 +145,24 @@ namespace aveditor
 		ThrowExceptionExpr(!m_Editor, "Call function SetEditor please!\n");
 
 		return m_Editor->GetInputContext(m_nContextIndex);
+	}
+
+	void CDemuxComponent::WriteEndData()
+	{
+		CInputContext* InputContext = GetInputContext();
+
+		EDataType eDataType = EDataType::DT_Packet;
+		if (!InputContext->IsValid())
+			eDataType = EDataType::DT_Frame;
+
+		for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
+		{
+			if (InputContext->GetStreamIndex((EStreamType)i) != -1)
+			{
+				WriteData((EStreamType)i, nullptr,
+					eDataType, InputContext->GetSubnumber());
+			}
+		}
 	}
 
 }

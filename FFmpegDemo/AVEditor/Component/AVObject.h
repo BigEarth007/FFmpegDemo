@@ -30,7 +30,7 @@ namespace aveditor
 		const bool IsBatchEnd() const;
 
 		// Set all component to end
-		void SetEndFlag(bool n_bEnd);
+		void SetEndFlag();
 
 		// Set max buffer queue size
 		void SetMaxBufferSize(int n_nSize);

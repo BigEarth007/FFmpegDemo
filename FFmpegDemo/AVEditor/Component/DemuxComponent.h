@@ -31,6 +31,9 @@ namespace aveditor
 
 		CInputContext* GetInputContext();
 
+		// Write null AVPacket/AVFrame
+		void WriteEndData();
+
 	protected:
 		int		m_nContextIndex = -1;
 

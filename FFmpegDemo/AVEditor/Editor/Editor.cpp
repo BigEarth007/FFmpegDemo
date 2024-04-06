@@ -274,20 +274,11 @@ namespace aveditor
 				Sleep(kSleepDelay * 50);
 			}
 
-			m_AVObject.SetEndFlag(true);
+			m_AVObject.SetEndFlag();
 			SetStagesStart(false);
 			JoinStages();
 
 			m_eStatus = EEditStatus::ES_Stopping;
-
-			for (size_t i = 0; i < m_vInputContext.size(); i++)
-			{
-				if (!m_vInputContext[i]->IsValid())
-				{
-					WriteFrameDatas(EStreamType::ST_Video, nullptr, 0, (int)i);
-					WriteFrameDatas(EStreamType::ST_Audio, nullptr, 0, (int)i);
-				}
-			}
 
 			m_AVObject.Release();
 			Release();
