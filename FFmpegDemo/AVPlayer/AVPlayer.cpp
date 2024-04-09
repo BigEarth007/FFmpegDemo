@@ -80,6 +80,8 @@ void AVPlayer::Init()
 			format.setByteOrder(QAudioFormat::LittleEndian); // 字节序  
 			format.setSampleType(QAudioFormat::SignedInt);   // 样本类型
 
+			m_nBytesPerSample = nFmt * aoCodec->ch_layout.nb_channels;
+			m_dDurionPerSample = 1.0 / aoCodec->sample_rate;
 
 			QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
 			qDebug() << info.deviceName();
@@ -102,10 +104,6 @@ void AVPlayer::Init()
 
 int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataType n_eType, int n_nIndex)
 {
-	if (!n_Data)
-	{
-		return 0;
-	}
 	// play frame
 	// ...
 	//DebugLog("Output frame %d, Type %d\n", n_eStreamType, n_eType);
@@ -128,6 +126,8 @@ int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataTy
 
 void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
 {
+	if (!n_Frame) return;
+
 	double dTimestamp = n_Frame->pts * av_q2d(n_Frame->time_base);
 	int offset = (dTimestamp - m_dTime) * 1000 * 1000;
 
@@ -161,6 +161,8 @@ void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
 
 void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 {
+	if (!m_AudioOutput) return;
+
 	m_bReady[1] = true;
 	while (!m_bReady[0])
 	{
@@ -174,22 +176,41 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 	{
 		int nFree = m_AudioOutput->bytesFree();
 
-		while (nFree < n_Frame->nb_samples * 4)
+		if (n_Frame)
 		{
-			nFree = m_AudioOutput->bytesFree();
-			std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
+			while (nFree < n_Frame->nb_samples * m_nBytesPerSample)
+			{
+				nFree = m_AudioOutput->bytesFree();
+				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
+			}
+
+			int nBytesRemain = SamplesRemainInBuffer(nFree);
+
+			//qDebug() << "Free: " << nFree << " Remain: " << nRemain << " Cost: " << nCost << " Wrote: " << m_nSamplesWrote;
+
+			m_Device->write(reinterpret_cast<const char*>(n_Frame->data[0]), n_Frame->linesize[0]);
+			m_nSamplesInBuffer = nBytesRemain + n_Frame->nb_samples * m_nBytesPerSample;
 		}
+		else
+		{
+			while (nFree < knMaxBufferSize)
+			{
+				m_nSamplesInBuffer = SamplesRemainInBuffer(nFree);
 
-		int nRemain = knMaxBufferSize - nFree;
-		int nCost = m_nSamplesInBuffer - nRemain;
-
-		m_dTime += (double)nCost / 4 / n_Frame->sample_rate;
-
-		//qDebug() << "Free: " << nFree << " Remain: " << nRemain << " Cost: " << nCost << " Wrote: " << m_nSamplesWrote;
-
-		m_Device->write(reinterpret_cast<const char*>(n_Frame->data[0]), n_Frame->linesize[0]);
-		m_nSamplesInBuffer = nRemain + n_Frame->nb_samples * 4;
+				nFree = m_AudioOutput->bytesFree();
+				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
+			}
+		}
 	}
+}
+
+int AVPlayer::SamplesRemainInBuffer(int n_nFree)
+{
+	int nBytesRemain = knMaxBufferSize - n_nFree;
+	int nSamplesCost = (m_nSamplesInBuffer - nBytesRemain) / m_nBytesPerSample;
+	m_dTime += nSamplesCost * m_dDurionPerSample;
+
+	return nBytesRemain;
 }
 
 void AVPlayer::OnPlayClicked()
@@ -203,7 +224,6 @@ void AVPlayer::OnPlayClicked()
 		m_dTime = 0;
 		if (m_AudioOutput) m_Device = m_AudioOutput->start();
 		Editor.Start();
-		//m_Device->open(QIODevice::ReadWrite);
 	}
 }
 

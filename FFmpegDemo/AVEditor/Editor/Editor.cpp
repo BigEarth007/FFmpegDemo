@@ -236,8 +236,12 @@ namespace aveditor
 
 	void CEditor::Stop()
 	{
-		Thread::Stop();
-		m_AVObject.SetEndFlag();
+		if (m_eStatus == EEditStatus::ES_Running)
+		{
+			Thread::Stop();
+			m_eStatus = EEditStatus::ES_Stopping;
+			m_AVObject.SetEndFlag();
+		}
 	}
 
 	bool CEditor::IsStop()
@@ -278,7 +282,8 @@ namespace aveditor
 				if (m_AVObject.IsBatchEnd())
 				{
 					nBatch++;
-					if (nBatch > nMaxBatch || !m_AVObject.IsRunning())
+					if (nBatch > nMaxBatch || 
+						m_eStatus != EEditStatus::ES_Running)
 						break;
 
 					m_AVObject.StartBatch(nBatch);

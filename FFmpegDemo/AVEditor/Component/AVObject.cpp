@@ -18,8 +18,6 @@ namespace aveditor
 	{
 		ThrowExceptionExpr(!m_Editor, "Call function SetEditor please!\n");
 
-		m_eStatus = EStatus::S_Running;
-
 		m_EncodeComp.SetEditor(m_Editor);
 		m_EncodeComp.Init();
 
@@ -144,8 +142,6 @@ namespace aveditor
 			m_vDemuxComp[i]->SetEndFlag(true);
 			m_vDemuxComp[i]->WriteEndData();
 		}
-
-		m_eStatus = EStatus::S_Stopped;
 	}
 
 	void CAVObject::SetMaxBufferSize(int n_nSize)
@@ -156,11 +152,6 @@ namespace aveditor
 	void CAVObject::SetOutputIOHandle(IAVIOHandle* n_Handle)
 	{
 		m_MuxerComp.SetIOHandle(n_Handle);
-	}
-
-	const bool CAVObject::IsRunning() const
-	{
-		return m_eStatus == EStatus::S_Running;
 	}
 
 	void CAVObject::ResetComponents()
