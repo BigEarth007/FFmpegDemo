@@ -234,9 +234,23 @@ namespace aveditor
 		}
 	}
 
+	void CEditor::Stop()
+	{
+		Thread::Stop();
+		m_AVObject.SetEndFlag();
+	}
+
 	bool CEditor::IsStop()
 	{
 		return Thread::IsStop() && m_eStatus == EEditStatus::ES_Stopped;
+	}
+
+	void CEditor::SetStagesPause(bool n_bPause)
+	{
+		for (size_t i = 0; i < m_vStages.size(); i++)
+		{
+			m_vStages[i]->SetPause(n_bPause);
+		}
 	}
 
 	EEditStatus CEditor::GetStatus() const
@@ -259,12 +273,12 @@ namespace aveditor
 			m_AVObject.StartBatch(nBatch);
 			SetStagesStart(true);
 
-			while (!Thread::IsStop())
+			while (true)
 			{
 				if (m_AVObject.IsBatchEnd())
 				{
 					nBatch++;
-					if (nBatch > nMaxBatch)
+					if (nBatch > nMaxBatch || !m_AVObject.IsRunning())
 						break;
 
 					m_AVObject.StartBatch(nBatch);
@@ -274,7 +288,6 @@ namespace aveditor
 				Sleep(kSleepDelay * 50);
 			}
 
-			m_AVObject.SetEndFlag();
 			SetStagesStart(false);
 			JoinStages();
 
@@ -290,7 +303,7 @@ namespace aveditor
 			DebugLog(e.what());
 		}
 
-		Thread::Stop();
+		Thread::Run();
 	}
 
 	void CEditor::CheckSelectedStreams()
@@ -320,14 +333,6 @@ namespace aveditor
 				m_vStages[i]->Start();
 			else if (!n_bStart && !m_vStages[i]->IsStop())
 				m_vStages[i]->Stop();
-		}
-	}
-
-	void CEditor::SetStagesPause(bool n_bPause)
-	{
-		for (size_t i = 0; i < m_vStages.size(); i++)
-		{
-			m_vStages[i]->SetPause(n_bPause);
 		}
 	}
 

@@ -150,6 +150,11 @@ namespace aveditor
 		m_dDuration += n_dDuration;
 	}
 
+	void CMuxerComponent::SetDuration(const double n_dDuration)
+	{
+		m_dDuration = 0;
+	}
+
 	bool CMuxerComponent::ReadCache()
 	{
 		int ret = 0;

@@ -26,6 +26,8 @@ namespace aveditor
 		virtual int Run(EStreamType n_eStreamType);
 		virtual void Release();
 
+		void ReleaseBuffer();
+
 		// Write data into IO handle
 		int WriteData(const EStreamType n_eStreamType,
 			void* n_Data, EDataType n_eType, int n_nIndex = 0);
@@ -42,7 +44,7 @@ namespace aveditor
 
 		// Set end flag
 		void SetEndFlag(const bool n_bEndFlag);
-		// Get end flag
+		// Get end flag, is it end now
 		const bool GetEndFlag() const;
 
 		// Set Audio/Video IO handle
@@ -51,8 +53,19 @@ namespace aveditor
 		// Set callback for writing AVPacket* or AVFrame*
 		void SetCompCallback(CompCallback func);
 
+		// Force to stop
+		void ForceStop();
+
 	protected:
 		virtual bool LimitBufferSize();
+
+		enum class ECompStatus
+		{
+			CS_Normal = 0,
+			CS_Ready,
+			CS_Stop,
+			CS_ForceStop,
+		};
 
 	protected:
 		CEditor*		m_Editor = nullptr;
@@ -68,7 +81,7 @@ namespace aveditor
 		ECompID			m_eCompID = ECompID::EI_Demux;
 
 		// Is end of the task?
-		bool			m_bIsEnd = false;
+		ECompStatus		m_eStatus = ECompStatus::CS_Normal;
 	};
 
 }

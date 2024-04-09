@@ -1,10 +1,11 @@
 #pragma once
-
+#include <QAudioOutput>
 #include <QtWidgets/QWidget>
 #include "ui_AVPlayer.h"
 #include "../AVEditor/AVEditor.h"
 
 using namespace aveditor;
+
 
 class AVPlayer : public QWidget, public IAVIOHandle
 {
@@ -30,7 +31,16 @@ protected slots:
 private:
     Ui::AVPlayerClass ui;
 
+	QAudioOutput* m_AudioOutput = nullptr;
+	QIODevice* m_Device = nullptr;
+
 	long m_nWidth = 0;
 	long m_nHeight = 0;
 	CEditor Editor;
+
+	bool	m_bIsAudioExists = true;
+	bool	m_bReady[2] = { false };
+	// Timer stamp
+	double	m_dTime = 0;
+	int		m_nSamplesInBuffer = 0;
 };

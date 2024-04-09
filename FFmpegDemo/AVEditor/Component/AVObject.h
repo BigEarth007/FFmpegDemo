@@ -38,12 +38,21 @@ namespace aveditor
 		// Set Audio/Video IO handle for output 
 		void SetOutputIOHandle(IAVIOHandle* n_Handle);
 
+		// Is running status
+		const bool IsRunning() const;
+
 	protected:
 		// Reset input and audio mix components, so it can read next batch contexts
 		void ResetComponents();
 
 		// Calculate duration of last batch
 		double Duration();
+
+		enum class EStatus
+		{
+			S_Stopped = 0,
+			S_Running
+		};
 
 	protected:
 		CEditor*						m_Editor = nullptr;
@@ -58,6 +67,8 @@ namespace aveditor
 
 		// Max buffer size
 		int								m_nMaxBufferSize = 50;
+
+		EStatus							m_eStatus = EStatus::S_Stopped;
 	};
 
 }

@@ -31,6 +31,9 @@ namespace aveditor
 		// Add duration of input context that has been done
 		void AddDuration(const double n_dDuration);
 
+		// Set current duration
+		void SetDuration(const double n_dDuration);
+
 	protected:
 		// Read AVPacket from queue, 
 		bool ReadCache();

@@ -13,6 +13,8 @@ namespace aveditor
 	{
 		ThrowExceptionExpr(!m_Editor, "Call function SetEditor please!\n");
 
+		m_eStatus = ECompStatus::CS_Ready;
+
 		m_OutputContext = &m_Editor->GetOutputContext()->GetContext();
 	}
 
@@ -33,17 +35,27 @@ namespace aveditor
 
 	void IComponent::Release()
 	{
-		IAVIOHandle::Release();
+		ReleaseBuffer();
 
 		m_Callback = nullptr;
-
-		m_bIsEnd = false;
 	}
 
-	int IComponent::WriteData(const EStreamType n_eStreamType, 
+	void IComponent::ReleaseBuffer()
+	{
+		IAVIOHandle::Release();
+	}
+
+	int IComponent::WriteData(const EStreamType n_eStreamType,
 		void* n_Data, EDataType n_eType, int n_nIndex /*= 0*/)
 	{
 		int ret = 0;
+
+		if (m_eStatus == ECompStatus::CS_ForceStop)
+		{
+			// If stop manual, no need to send data
+			AVFreeData(n_eType, n_Data);
+			n_Data = nullptr;
+		}
 
 		if (m_Callback)
 			ret = m_Callback(n_eStreamType,
@@ -53,15 +65,7 @@ namespace aveditor
 				n_Data, n_eType, n_nIndex);
 		else
 		{
-			switch (n_eType)
-			{
-			case aveditor::EDataType::DT_Packet:
-				av_packet_free((AVPacket**)&n_Data);
-				break;
-			case aveditor::EDataType::DT_Frame:
-				av_frame_free((AVFrame**)&n_Data);
-				break;
-			}
+			AVFreeData(n_eType, n_Data);
 		}
 
 		return ret;
@@ -89,12 +93,15 @@ namespace aveditor
 
 	void IComponent::SetEndFlag(const bool n_bEndFlag)
 	{
-		m_bIsEnd = n_bEndFlag;
+		if (n_bEndFlag)
+			m_eStatus = ECompStatus::CS_Stop;
+		else
+			m_eStatus = ECompStatus::CS_Ready;
 	}
 
 	const bool IComponent::GetEndFlag() const
 	{
-		return m_bIsEnd;
+		return m_eStatus == ECompStatus::CS_Stop;
 	}
 
 	void IComponent::SetIOHandle(IAVIOHandle* n_Handle)
@@ -107,9 +114,15 @@ namespace aveditor
 		m_Callback = func;
 	}
 
+	void IComponent::ForceStop()
+	{
+		m_eStatus = ECompStatus::CS_ForceStop;
+		ReleaseBuffer();
+	}
+
 	bool IComponent::LimitBufferSize()
 	{
-		return GetEndFlag();
+		return !GetEndFlag();
 	}
 
 }

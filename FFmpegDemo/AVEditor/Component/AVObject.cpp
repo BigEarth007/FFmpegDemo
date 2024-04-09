@@ -18,6 +18,8 @@ namespace aveditor
 	{
 		ThrowExceptionExpr(!m_Editor, "Call function SetEditor please!\n");
 
+		m_eStatus = EStatus::S_Running;
+
 		m_EncodeComp.SetEditor(m_Editor);
 		m_EncodeComp.Init();
 
@@ -87,6 +89,8 @@ namespace aveditor
 	{
 		ResetComponents();
 
+		if (n_nBatchIndex == 0) m_MuxerComp.SetDuration(0);
+
 		auto vInputs = m_Editor->GetInputContextsByBatch(n_nBatchIndex);
 
 		for (size_t i = 0; i < vInputs.size(); i++)
@@ -126,10 +130,22 @@ namespace aveditor
 
 	void CAVObject::SetEndFlag()
 	{
+		for (size_t i = 0; i < m_vDecodeComp.size(); i++)
+		{
+			m_vDecodeComp[i]->ForceStop();
+		}
+
+		m_AudioMixComp.ForceStop();
+		m_EncodeComp.ForceStop();
+		m_MuxerComp.ForceStop();
+
 		for (size_t i = 0; i < m_vDemuxComp.size(); i++)
 		{
+			m_vDemuxComp[i]->SetEndFlag(true);
 			m_vDemuxComp[i]->WriteEndData();
 		}
+
+		m_eStatus = EStatus::S_Stopped;
 	}
 
 	void CAVObject::SetMaxBufferSize(int n_nSize)
@@ -140,6 +156,11 @@ namespace aveditor
 	void CAVObject::SetOutputIOHandle(IAVIOHandle* n_Handle)
 	{
 		m_MuxerComp.SetIOHandle(n_Handle);
+	}
+
+	const bool CAVObject::IsRunning() const
+	{
+		return m_eStatus == EStatus::S_Running;
 	}
 
 	void CAVObject::ResetComponents()

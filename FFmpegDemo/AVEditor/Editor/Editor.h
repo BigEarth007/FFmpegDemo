@@ -81,7 +81,10 @@ namespace aveditor
 			const int& n_nContextIndex = 0);
 
 		virtual void Start();
+		virtual void Stop();
 		virtual bool IsStop();
+
+		void SetStagesPause(bool n_bPause);
 
 		EEditStatus GetStatus() const;
 
@@ -92,7 +95,6 @@ namespace aveditor
 		void CheckSelectedStreams();
 
 		void SetStagesStart(bool n_bStart);
-		void SetStagesPause(bool n_bPause);
 		void JoinStages();
 
 	protected:
