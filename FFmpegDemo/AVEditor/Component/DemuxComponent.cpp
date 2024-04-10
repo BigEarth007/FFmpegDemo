@@ -72,10 +72,14 @@ namespace aveditor
 			{
 				dSecond = Packet->pts * av_q2d(Stream->time_base);
 
-				if (dSecond < InputContext->GetSectionFrom() ||
-					(InputContext->GetSectionTo() > 0 &&
-						dSecond > InputContext->GetSectionTo()))
+				if (dSecond < InputContext->GetSectionFrom())
+					break;
+
+				if (InputContext->GetSectionTo() > 0 &&
+					dSecond > InputContext->GetSectionTo())
 				{
+					WriteEndData();
+					SetEndFlag(true);
 					break;
 				}
 
