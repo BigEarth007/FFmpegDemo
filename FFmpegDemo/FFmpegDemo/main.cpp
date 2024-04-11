@@ -10,9 +10,6 @@ using namespace aveditor;
 /*
 * Convert .mp4 to .mov 
 */
-// Time cost: 1.95787e+06 millisecond.
-// Time cost: 1.50517e+06 millisecond.
-// Time cost: 1.34881e+06 millisecond.
 static void Cover()
 {
 	try
@@ -115,7 +112,7 @@ static void MixAudio()
 		FFormatContext& Input = Editor.OpenInputFile("4.mp4", ETask::T_AMixMain);
 		FFormatContext& Input2 = Editor.OpenInputFile("1.aac", ETask::T_AMixBranch);
 
-		FFormatContext& Output = Editor.AllocOutputFile("2.mov");
+		FFormatContext& Output = Editor.AllocOutputFile("2.avi");
 
 		Output.BuildAllStreams(Input);
 		Editor.OpenOutputFile();
@@ -350,7 +347,7 @@ int main()
 	//SetupEditorLog();
 	
 	//Cover();
-	//Concat();
+	Concat();
 	//DetachAudioStream();
 	//MixAudio();
 	//Play();

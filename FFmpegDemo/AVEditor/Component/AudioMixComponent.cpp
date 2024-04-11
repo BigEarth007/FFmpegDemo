@@ -54,7 +54,7 @@ namespace aveditor
 		if (ret == AVERROR_EOF)
 		{
 			WriteData(EStreamType::ST_Audio, nullptr, EDataType::DT_Frame, 0);
-			SetEndFlag(true);
+			SetStreamEndFlag(EStreamType::ST_Audio, 1);
 		}
 
 		return ret;
@@ -63,8 +63,9 @@ namespace aveditor
 	void CAudioMixComponent::Release()
 	{
 		m_Filter.Release();
-		if (m_PopFrame)
-			av_frame_free(&m_PopFrame);
+		if (m_PopFrame) av_frame_free(&m_PopFrame);
+
+		SetStreamEndFlag(EStreamType::ST_Audio, 1);
 
 		IComponent::Release();
 	}
@@ -90,6 +91,7 @@ namespace aveditor
 		}
 		else
 		{
+			if (!n_Data) SetStreamEndFlag(n_eStreamType, 1);
 			ret = WriteData(n_eStreamType, n_Data, n_eType, n_nIndex);
 		}
 
@@ -148,7 +150,7 @@ namespace aveditor
 			}
 		}
 
-		if (!IsValid()) SetEndFlag(true);
+		if (IsValid()) SetStreamEndFlag(EStreamType::ST_Audio, 0);
 
 		return 0;
 	}

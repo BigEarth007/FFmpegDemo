@@ -32,8 +32,6 @@ namespace aveditor
 		int EncodeFrame(EStreamType n_eStreamType, AVFrame* n_Frame);
 
 	protected:
-		bool m_bIsEnd[(int)EStreamType::ST_Size] = { true };
-
 		std::map<EStreamType, FCodecContext>* m_OutputCodecContext = nullptr;
 	};
 }

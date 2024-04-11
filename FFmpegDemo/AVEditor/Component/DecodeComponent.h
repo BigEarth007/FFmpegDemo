@@ -39,11 +39,6 @@ namespace aveditor
 		// Is the packet should be decoded
 		const bool GetDecodeFlag() const;
 
-		// Set end flag
-		void SetEndFlag(const bool n_bEndFlag);
-		// Get end flag
-		const bool GetEndFlag() const;
-
 		// Set finished callback
 		void SetFinishedCallback(CompCallback n_Callback);
 
@@ -70,9 +65,6 @@ namespace aveditor
 
 		// Is the packet should be decoded
 		bool			m_bNeedDecode = false;
-
-		// Is end of packet/frame
-		bool			m_bIsEnd = false;
 	};
 
 	//////////////////////////////////////////////////////////////////////////

@@ -151,16 +151,6 @@ namespace aveditor
 		return m_bNeedDecode;
 	}
 
-	void CAVConverter::SetEndFlag(const bool n_bEndFlag)
-	{
-		m_bIsEnd = n_bEndFlag;
-	}
-
-	const bool CAVConverter::GetEndFlag() const
-	{
-		return m_bIsEnd;
-	}
-
 	void CAVConverter::SetFinishedCallback(CompCallback n_Callback)
 	{
 		m_Callback = n_Callback;
@@ -212,8 +202,6 @@ namespace aveditor
 			ret = m_Callback(m_eStreamType, n_Frame,
 				EDataType::DT_Frame, m_nSubnumber);
 
-		if (!n_Frame) m_bIsEnd = true;
-
 		return ret;
 	}
 
@@ -239,6 +227,24 @@ namespace aveditor
 		auto mOutputCodecContext = m_OutputContext->GetCodecContext();
 		auto mInputCodecContext = InputContext->GetContext().GetCodecContext();
 
+		if (InputContext->IsValid())
+		{
+			if (!m_OutputContext->IsValid())
+			{
+				// Output context is invalid or need to filter frame
+				// Then the packet should be decoded
+				for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
+				{
+					bDecodeFlag[i] = true;
+				}
+			}
+			else if (InputContext->GetTask() == ETask::T_AMixMain ||
+				InputContext->GetTask() == ETask::T_AMixBranch)
+			{
+				bDecodeFlag[(int)EStreamType::ST_Audio] = true;
+			}
+		}
+
 		for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
 		{
 			// Check if packet should be decoded
@@ -262,29 +268,7 @@ namespace aveditor
 						std::placeholders::_3, std::placeholders::_4));
 
 				// Converter is valid, so need to decode video packet
-				bDecodeFlag[i] = m_Decoder[i].IsConvertValid();
-			}
-			else
-			{
-				m_Decoder[i].SetEndFlag(true);
-			}
-		}
-
-		if (InputContext->IsValid())
-		{
-			if (!m_OutputContext->IsValid())
-			{
-				// Output context is invalid or need to filter frame
-				// Then the packet should be decoded
-				for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
-				{
-					bDecodeFlag[i] = true;
-				}
-			}
-			else if (InputContext->GetTask() == ETask::T_AMixMain ||
-				InputContext->GetTask() == ETask::T_AMixBranch)
-			{
-				bDecodeFlag[(int)EStreamType::ST_Audio] = true;
+				bDecodeFlag[i] |= m_Decoder[i].IsConvertValid();
 			}
 		}
 
@@ -292,7 +276,7 @@ namespace aveditor
 		{
 			m_Decoder[i].SetDecodeFlag(bDecodeFlag[i]);
 			// no need to decode, set to end
-			if (!bDecodeFlag[i]) m_Decoder[i].SetEndFlag(true);
+			if (bDecodeFlag[i]) SetStreamEndFlag((EStreamType)i, 0);
 		}
 	}
 
@@ -305,7 +289,7 @@ namespace aveditor
 		EDataType eDataType = EDataType::DT_None;
 		void* pData = nullptr;
 
-		if (!m_Decoder[(int)n_eStreamType].GetEndFlag())
+		if (GetStreamEndFlag(n_eStreamType) == 0)
 		{
 			ret = Pop(n_eStreamType, eDataType, pData, kSleepDelay);
 			if (ret >= 0)
@@ -313,14 +297,6 @@ namespace aveditor
 				ret = m_Decoder[(int)n_eStreamType].Coverting(eDataType, pData);
 			}
 		}
-
-		bool bEnd = true;
-		for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
-		{
-			bEnd &= m_Decoder[i].GetEndFlag();
-		}
-
-		SetEndFlag(bEnd);
 
 		return ret;
 	}
@@ -347,6 +323,7 @@ namespace aveditor
 		}
 		else
 		{
+			if (!n_Data) SetStreamEndFlag(n_eStreamType, 1);
 			ret = WriteData(n_eStreamType, n_Data, n_eType, n_nIndex);
 		}
 
@@ -356,6 +333,8 @@ namespace aveditor
 	int CDecodeComponent::FinishedDecode(const EStreamType n_eStreamType,
 		void* n_Data, EDataType n_eType, int n_nIndex)
 	{
+		if (!n_Data) SetStreamEndFlag(n_eStreamType, 1);
+
 		int ret = WriteData(n_eStreamType, n_Data, n_eType, n_nIndex);
 
 		return ret;

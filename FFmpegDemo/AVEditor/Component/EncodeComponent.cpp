@@ -23,7 +23,7 @@ namespace aveditor
 		for (auto itr = m_OutputCodecContext->begin();
 			itr != m_OutputCodecContext->end(); itr++)
 		{
-			m_bIsEnd[(int)itr->first] = false;
+			SetStreamEndFlag(itr->first, 0);
 		}
 	}
 
@@ -37,24 +37,15 @@ namespace aveditor
 		EDataType eDataType = EDataType::DT_None;
 		void* pData = nullptr;
 
-		if (!m_bIsEnd[(int)n_eStreamType])
+		if (GetStreamEndFlag(n_eStreamType) == 0)
 		{
 			ret = Pop(n_eStreamType, eDataType, pData, kSleepDelay);
 			if (ret >= 0 && eDataType == EDataType::DT_Frame)
 			{
 				ret = EncodeFrame(n_eStreamType, (AVFrame*)pData);
-				if (ret == AVERROR_EOF) 
-					m_bIsEnd[(int)n_eStreamType] = true;
+				if (ret == AVERROR_EOF) SetStreamEndFlag(n_eStreamType, 1);
 			}
 		}
-
-		bool bEnd = true;
-		for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
-		{
-			bEnd &= m_bIsEnd[i];
-		}
-
-		SetEndFlag(bEnd);
 
 		return ret;
 	}
@@ -66,7 +57,7 @@ namespace aveditor
 			for (auto itr = m_OutputCodecContext->begin();
 				itr != m_OutputCodecContext->end(); itr++)
 			{
-				m_bIsEnd[(int)itr->first] = false;
+				SetStreamEndFlag(itr->first, 0);
 			}
 		}
 
@@ -85,6 +76,7 @@ namespace aveditor
 		}
 		else
 		{
+			if (!n_Data) SetStreamEndFlag(n_eStreamType, 1);
 			ret = WriteData(n_eStreamType, n_Data, n_eType, n_nIndex);
 		}
 

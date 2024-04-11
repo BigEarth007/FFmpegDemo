@@ -57,7 +57,7 @@ namespace aveditor
 		CMuxerComponent					m_MuxerComp;
 
 		// Max buffer size
-		int								m_nMaxBufferSize = 50;
+		int								m_nMaxBufferSize = 80;
 	};
 
 }

@@ -20,6 +20,13 @@ namespace aveditor
 
 		m_nContextIndex = n_nContextIndex;
 		m_OutputCodecContext = m_OutputContext->GetCodecContext();
+
+		CInputContext* InputContext = GetInputContext();
+		for (int i = 0; i < (int)EStreamType::ST_Size; i++)
+		{
+			if (InputContext->GetStreamIndex((EStreamType)i) != -1)
+				SetStreamEndFlag((EStreamType)i, 0);
+		}
 	}
 
 	int CDemuxComponent::Run()
@@ -44,7 +51,6 @@ namespace aveditor
 			if (ret < 0)
 			{
 				WriteEndData();
-				SetEndFlag(true);
 				break;
 			}
 
@@ -62,8 +68,10 @@ namespace aveditor
 			}
 
 			eStreamType = MediaType2StreamType(Stream->codecpar->codec_type);
-			if (InputContext->GetStreamIndex(eStreamType) == -1)
+			if (InputContext->GetStreamIndex(eStreamType) == -1 ||
+				0 != GetStreamEndFlag(eStreamType))
 			{
+				// Current stream is not use, or is end
 				break;
 			}
 
@@ -78,8 +86,9 @@ namespace aveditor
 				if (InputContext->GetSectionTo() > 0 &&
 					dSecond > InputContext->GetSectionTo())
 				{
-					WriteEndData();
-					SetEndFlag(true);
+					WriteData(eStreamType, nullptr,
+						EDataType::DT_Packet, InputContext->GetSubnumber());
+					SetStreamEndFlag(eStreamType, 1);
 					break;
 				}
 
@@ -101,26 +110,6 @@ namespace aveditor
 			//LogInfo("Current size: %zd, Stream index: %d.\n", 
 			//			m_Cache->Size(nKey), Packet->stream_index);
 
-			// Limit buffer size to reduce memory usage
-			if (m_AVIOHandle && 
-				m_AVIOHandle->GetBufferSize(eStreamType) > m_nMaxBufferSize)
-			{
-				size_t nSize = m_nMaxBufferSize;
-				for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
-				{
-					// get min buffer size of other stream buffer
-					EStreamType st = (EStreamType)i;
-					if (InputContext->GetStreamIndex(st) != -1 &&
-						st != eStreamType &&
-						m_AVIOHandle->GetBufferSize(st) < nSize)
-					{
-						nSize = m_AVIOHandle->GetBufferSize(st);
-					}
-				}
-
-				m_AVIOHandle->EnableBufferSizeLimited(nSize > 0);
-			}
-
 			WriteData(eStreamType, Packet,
 				EDataType::DT_Packet, InputContext->GetSubnumber());
 
@@ -141,6 +130,7 @@ namespace aveditor
 	int CDemuxComponent::ReceiveData(const EStreamType n_eStreamType, 
 		void* n_Data, EDataType n_eType, int n_nIndex /*= 0*/)
 	{
+		if (!n_Data) SetStreamEndFlag(n_eStreamType, 1);
 		return WriteData(n_eStreamType, n_Data, n_eType, n_nIndex);
 	}
 
@@ -165,6 +155,7 @@ namespace aveditor
 			{
 				WriteData((EStreamType)i, nullptr,
 					eDataType, InputContext->GetSubnumber());
+				SetStreamEndFlag((EStreamType)i, 1);
 			}
 		}
 	}

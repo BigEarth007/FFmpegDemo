@@ -25,7 +25,7 @@ public:
 	virtual void AudioFrameArrived(const AVFrame* n_Frame);
 
 protected:
-	int SamplesRemainInBuffer(int n_nFree);
+	void SamplesRemainInBuffer(int n_nFree);
 
 protected slots:
 	void OnPlayClicked();

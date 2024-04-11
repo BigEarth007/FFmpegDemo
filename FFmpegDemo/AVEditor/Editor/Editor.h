@@ -5,6 +5,8 @@ namespace aveditor
 {
 	enum class EEditStatus
 	{
+		// Force to stop
+		ES_ForceStop,
 		// It's stopped
 		ES_Stopped,
 		// It's running

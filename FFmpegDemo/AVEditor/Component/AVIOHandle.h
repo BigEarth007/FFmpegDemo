@@ -23,7 +23,11 @@ namespace aveditor
 
 		// Pop data from queue
 		int Pop(const EStreamType n_eStreamType,
-			EDataType& n_eItemType, void*& n_Data, const int n_nTimeout);;
+			EDataType& n_eItemType, void*& n_Data, const int n_nTimeout);
+
+		// Front data of queue
+		int Front(const EStreamType n_eStreamType,
+			EDataType& n_eItemType, void*& n_Data);
 
 		// Get size of the queue
 		const size_t GetBufferSize(EStreamType n_eStreamType);
@@ -33,20 +37,42 @@ namespace aveditor
 
 		virtual void Release();
 
-		// Set if buffer size limited is enabled
-		void EnableBufferSizeLimited(bool n_bEnable);
+		// Set end flag
+		void SetEndFlag(const bool n_bEndFlag);
+		// Get end flag, is it end now
+		const bool GetEndFlag() const;
+
+		// Set stream end flag
+		void SetStreamEndFlag(const EStreamType n_eStreamType,
+			const int n_nEndFlag);
+		// Get stream end flag
+		const int GetStreamEndFlag(const EStreamType n_eStreamType) const;
 
 	protected:
 		virtual bool LimitBufferSize();
 
+		enum class ECompStatus
+		{
+			CS_Normal = 0,
+			CS_Ready,
+			CS_Stop,
+			CS_ForceStop,
+		};
+
+		struct FBufferQueue
+		{
+			CAVQueue	AVQueue;
+			// Is current buffer end
+			int			EndFlag = 1;
+		};
+
 	protected:
-		// queue buffer
-		CAVQueue		m_qCache[(int)EStreamType::ST_Size];
+		FBufferQueue	m_Cache[(int)EStreamType::ST_Size];
 
 		// Max buffer size
-		int				m_nMaxBufferSize = 50;
+		int				m_nMaxBufferSize = 80;
 
-		// Enable buffer size limit
-		bool			m_nBufferSizeLimited = true;
+		// Is end of the task?
+		ECompStatus		m_eStatus = ECompStatus::CS_Normal;
 	};
 }

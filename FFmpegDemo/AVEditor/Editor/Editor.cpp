@@ -239,8 +239,13 @@ namespace aveditor
 		if (m_eStatus == EEditStatus::ES_Running)
 		{
 			Thread::Stop();
-			m_eStatus = EEditStatus::ES_Stopping;
+
+			m_eStatus = EEditStatus::ES_ForceStop;
 			m_AVObject.SetEndFlag();
+		}
+		else if (m_eStatus == EEditStatus::ES_Stopped)
+		{
+			Thread::Stop();
 		}
 	}
 
@@ -283,7 +288,7 @@ namespace aveditor
 				{
 					nBatch++;
 					if (nBatch > nMaxBatch || 
-						m_eStatus != EEditStatus::ES_Running)
+						m_eStatus == EEditStatus::ES_ForceStop)
 						break;
 
 					m_AVObject.StartBatch(nBatch);

@@ -52,6 +52,26 @@ namespace aveditor
 		return eStreamType;
 	}
 
+	AVEDITOR_API const AVMediaType StreamType2MediaType(const EStreamType n_eStreamType)
+	{
+		AVMediaType eMediaType = AVMediaType::AVMEDIA_TYPE_UNKNOWN;
+	
+		switch (n_eStreamType)
+		{
+		case EStreamType::ST_Video:
+			eMediaType = AVMediaType::AVMEDIA_TYPE_VIDEO;
+			break;
+		case EStreamType::ST_Audio:
+			eMediaType = AVMediaType::AVMEDIA_TYPE_AUDIO;
+			break;
+		case EStreamType::ST_Subtitle:
+			eMediaType = AVMediaType::AVMEDIA_TYPE_SUBTITLE;
+			break;
+		}
+
+		return eMediaType;
+	}
+
 	AVEDITOR_API void AVFreeData(const EDataType n_eType, void* n_Data)
 	{
 		if (!n_Data) return;
@@ -61,10 +81,16 @@ namespace aveditor
 		case aveditor::EDataType::DT_None:
 			break;
 		case aveditor::EDataType::DT_Packet:
-			av_packet_free((AVPacket**)&n_Data);
+		{
+			AVPacket* Packet = (AVPacket*)n_Data;
+			av_packet_free(&Packet);
+		}
 			break;
 		case aveditor::EDataType::DT_Frame:
-			av_frame_free((AVFrame**)&n_Data);
+		{
+			AVFrame* Frame = (AVFrame*)n_Data;
+			av_frame_free(&Frame);
+		}
 			break;
 		default:
 			break;

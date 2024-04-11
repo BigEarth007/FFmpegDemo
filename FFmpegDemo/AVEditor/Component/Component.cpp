@@ -91,19 +91,6 @@ namespace aveditor
 		return m_eCompID;
 	}
 
-	void IComponent::SetEndFlag(const bool n_bEndFlag)
-	{
-		if (n_bEndFlag)
-			m_eStatus = ECompStatus::CS_Stop;
-		else
-			m_eStatus = ECompStatus::CS_Ready;
-	}
-
-	const bool IComponent::GetEndFlag() const
-	{
-		return m_eStatus == ECompStatus::CS_Stop;
-	}
-
 	void IComponent::SetIOHandle(IAVIOHandle* n_Handle)
 	{
 		m_AVIOHandle = n_Handle;

@@ -36,29 +36,21 @@ namespace aveditor
 
 	protected:
 		// Read AVPacket from queue, 
-		bool ReadCache();
+		AVPacket* ReadCache();
+
+		void Duration2Pts();
 
 		struct FTimeSync
 		{
-			AVPacket*	Packet = nullptr;
 			double		dTimebase = 0.0f;
 			double		dTimestamp = 0.0f;
-			// -1: not use
-			// 0: using
-			// 1: finished
-			int			nStatus = -1;
+			// 1: hold data
+			// 0: empty
+			int			nHold = 0;
 			// stream index
-			int			nStream = 0;
-
-			// Is there a packet data in storage
-			bool Writable() const { return nStatus == 0 && !Packet; }
-			// Is there a packet that can be read
-			bool Readable() const { return nStatus == 0 && Packet; }
-			void Fill(AVPacket* n_Packet)
-			{
-				dTimestamp = n_Packet->pts * dTimebase;
-				Packet = n_Packet;
-			}
+			int			nStreamIndex = 0;
+			// Duration to pts
+			int64_t		nPts = 0;
 		};
 
 	protected:
@@ -66,11 +58,5 @@ namespace aveditor
 		double				m_dDuration = 0.0;
 		// Packet cache for time synchronization
 		FTimeSync			m_TimeSync[(int)EStreamType::ST_Size] = { 0 };
-
-		// Index of stream with min timestamp
-		int					m_nMinIndex = 0;
-
-		int					m_nReadSize = 0;
-		int					m_nStreamSize = 0;
 	};
 }

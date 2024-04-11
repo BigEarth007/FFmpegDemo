@@ -184,18 +184,18 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
 			}
 
-			int nBytesRemain = SamplesRemainInBuffer(nFree);
+			SamplesRemainInBuffer(nFree);
 
 			//qDebug() << "Free: " << nFree << " Remain: " << nRemain << " Cost: " << nCost << " Wrote: " << m_nSamplesWrote;
 
 			m_Device->write(reinterpret_cast<const char*>(n_Frame->data[0]), n_Frame->linesize[0]);
-			m_nSamplesInBuffer = nBytesRemain + n_Frame->nb_samples * m_nBytesPerSample;
+			m_nSamplesInBuffer += n_Frame->nb_samples * m_nBytesPerSample;
 		}
 		else
 		{
 			while (nFree < knMaxBufferSize)
 			{
-				m_nSamplesInBuffer = SamplesRemainInBuffer(nFree);
+				 SamplesRemainInBuffer(nFree);
 
 				nFree = m_AudioOutput->bytesFree();
 				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
@@ -204,13 +204,13 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 	}
 }
 
-int AVPlayer::SamplesRemainInBuffer(int n_nFree)
+void AVPlayer::SamplesRemainInBuffer(int n_nFree)
 {
 	int nBytesRemain = knMaxBufferSize - n_nFree;
 	int nSamplesCost = (m_nSamplesInBuffer - nBytesRemain) / m_nBytesPerSample;
 	m_dTime += nSamplesCost * m_dDurionPerSample;
 
-	return nBytesRemain;
+	m_nSamplesInBuffer = nBytesRemain;
 }
 
 void AVPlayer::OnPlayClicked()

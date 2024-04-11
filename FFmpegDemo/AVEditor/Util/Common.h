@@ -60,6 +60,8 @@ namespace aveditor
 		AVEDITOR_API void SetupEditorDevice();
 		// Cover media type to stream type
 		AVEDITOR_API const EStreamType MediaType2StreamType(const AVMediaType n_eMediaType);
+		// Cover stream type to media type
+		AVEDITOR_API const AVMediaType StreamType2MediaType(const EStreamType n_eStreamType);
 		// Free AVPacket/AVFrame by DataType
 		AVEDITOR_API void AVFreeData(const EDataType n_eType, void* n_Data);
 	}
