@@ -59,14 +59,17 @@ namespace aveditor
 
 	void CMuxerComponent::Release()
 	{
-		auto OutputCodecContext = m_OutputContext->GetCodecContext();
-
-		for (auto itr = OutputCodecContext->begin();
-			itr != OutputCodecContext->end(); itr++)
+		if (m_OutputContext)
 		{
-			m_TimeSync[(int)itr->first].dTimestamp = 0;
-			m_TimeSync[(int)itr->first].nHold = 0;
-			SetStreamEndFlag(itr->first, 0);
+			auto OutputCodecContext = m_OutputContext->GetCodecContext();
+
+			for (auto itr = OutputCodecContext->begin();
+				itr != OutputCodecContext->end(); itr++)
+			{
+				m_TimeSync[(int)itr->first].dTimestamp = 0;
+				m_TimeSync[(int)itr->first].nHold = 0;
+				SetStreamEndFlag(itr->first, 0);
+			}
 		}
 
 		IComponent::Release();

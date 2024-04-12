@@ -28,7 +28,6 @@ namespace aveditor
 		CEditor*				m_Editor = nullptr;
 
 		IContextHandle*			m_CtxHandle = nullptr;
-		IAVIOHandle*			m_AVIOHandle = nullptr;
 
 		// Index of this format context
 		int						m_nContextIndex = 0;

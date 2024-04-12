@@ -26,7 +26,14 @@ namespace aveditor
 		void SetChannelCount(const int n_nCount);
 		const int GetChannelCount() const;
 
+		void SetAVIOHandle(IAVIOHandle* n_AVIOHandle);
+
+		int WriteFrameData(const EStreamType n_eStreamType,
+			void* n_Data, EDataType n_eType, int n_nIndex = 0);
+
 	protected:
+		IAVIOHandle* m_AVIOHandle = nullptr;
+
 		// For video frame
 		int m_nPlanes = 0;
 

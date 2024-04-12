@@ -168,7 +168,7 @@ namespace aveditor
 	void CInputContext::WriteFrameDatas(EStreamType n_eStreamType,
 		const void* n_Data, const int& n_nSize)
 	{
-		if (!m_Context.m_sName.empty() || !m_CtxHandle || !m_AVIOHandle)
+		if (!m_Context.m_sName.empty() || !m_CtxHandle)
 			return;
 
 		AVFrame* Frame = nullptr;
@@ -189,7 +189,7 @@ namespace aveditor
 			}
 		}
 
-		m_AVIOHandle->ReceiveData(n_eStreamType, 
+		m_CtxHandle->WriteFrameData(n_eStreamType,
 			Frame, EDataType::DT_Frame, m_nSubnumber);
 	}
 

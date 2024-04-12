@@ -68,4 +68,22 @@ namespace aveditor
 	{
 		return m_nChannelCount;
 	}
+
+	void IContextHandle::SetAVIOHandle(IAVIOHandle* n_AVIOHandle)
+	{
+		m_AVIOHandle = n_AVIOHandle;
+	}
+
+	int IContextHandle::WriteFrameData(const EStreamType n_eStreamType, 
+		void* n_Data, EDataType n_eType, int n_nIndex /*= 0*/)
+	{
+		int ret = 0;
+
+		if (m_AVIOHandle)
+			ret = m_AVIOHandle->ReceiveData(
+				n_eStreamType, n_Data, n_eType, n_nIndex);
+
+		return ret;
+	}
+
 }

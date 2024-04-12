@@ -64,7 +64,7 @@ namespace aveditor
 
 	void CBaseContext::SetAVIOHandle(IAVIOHandle* n_AVIOHandle)
 	{
-		m_AVIOHandle = n_AVIOHandle;
+		if (m_CtxHandle) m_CtxHandle->SetAVIOHandle(n_AVIOHandle);
 	}
 
 }
