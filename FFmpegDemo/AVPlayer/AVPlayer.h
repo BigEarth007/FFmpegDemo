@@ -27,19 +27,21 @@ public:
 protected:
 	void SamplesRemainInBuffer(int n_nFree);
 
+signals:
+	void OnVideoArrived(const QPixmap n_Pixmap);
+
 protected slots:
 	void OnPlayClicked();
 	void OnStopClicked();
+	void slotVideoArrived(const QPixmap n_Pixmap);
 
 private:
     Ui::AVPlayerClass ui;
 
-	QAudioOutput* m_AudioOutput = nullptr;
-	QIODevice* m_Device = nullptr;
+	QAudioOutput*	m_AudioOutput = nullptr;
+	QIODevice*		m_Device = nullptr;
 
-	long m_nWidth = 0;
-	long m_nHeight = 0;
-	CEditor Editor;
+	CEditor			Editor;
 
 	// Is audio stream exists
 	bool	m_bIsAudioExists = true;

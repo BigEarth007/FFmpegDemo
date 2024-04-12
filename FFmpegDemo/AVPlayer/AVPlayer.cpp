@@ -15,6 +15,9 @@ AVPlayer::AVPlayer(QWidget *parent)
 
 	connect(ui.btnStop, &QPushButton::clicked,
 		this, &AVPlayer::OnStopClicked);
+
+	connect(this, &AVPlayer::OnVideoArrived,
+		this, &AVPlayer::slotVideoArrived);
 }
 
 AVPlayer::~AVPlayer()
@@ -25,9 +28,6 @@ AVPlayer::~AVPlayer()
 
 void AVPlayer::Init()
 {
-	m_nWidth = ui.label->size().width();
-	m_nHeight = ui.label->size().height();
-
 	try
 	{
 		FFormatContext& Input = Editor.OpenInputFile("1.mp4", ETask::T_Normal, kStreamVA);
@@ -46,11 +46,9 @@ void AVPlayer::Init()
 		//Output.BuildCodecContext(aCodec->codec_id, aCodec);
 
 		AVCodecContext* ovCodec = Output.GetCodecContext(EStreamType::ST_Video);
-
-		ovCodec->width = m_nWidth;
-		ovCodec->height = m_nHeight;
 		ovCodec->pix_fmt = GetSupportedPixelFormat(ovCodec->codec, 
 			AVPixelFormat::AV_PIX_FMT_RGB24);
+
 		AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
 		aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
 
@@ -118,7 +116,6 @@ int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataTy
 		break;
 	}
 
-
 	AVFreeData(n_eType, n_Data);
 
 	return 0;
@@ -148,15 +145,10 @@ void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
 	if (offset > 0)
 		std::this_thread::sleep_for(std::chrono::microseconds(offset));
 
-	QPixmap Pixmap;
-
-	QImage img(n_Frame->data[0], 
+	QImage img(n_Frame->data[0],
 		n_Frame->width, n_Frame->height, n_Frame->linesize[0], QImage::Format_RGB888);
-	Pixmap = QPixmap::fromImage(img);
-	if (!Pixmap.isNull())
-	{
-		ui.label->setPixmap(Pixmap);
-	}
+
+	emit OnVideoArrived(QPixmap::fromImage(img));
 }
 
 void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
@@ -232,5 +224,14 @@ void AVPlayer::OnStopClicked()
 	if (Editor.GetStatus() == EEditStatus::ES_Running)
 	{
 		Editor.Stop();
+	}
+}
+
+void AVPlayer::slotVideoArrived(const QPixmap n_Pixmap)
+{
+	if (!n_Pixmap.isNull())
+	{
+		QPixmap Pixmap = n_Pixmap.scaled(ui.label->size());
+		ui.label->setPixmap(Pixmap);
 	}
 }
