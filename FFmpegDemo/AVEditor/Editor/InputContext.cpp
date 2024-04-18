@@ -78,7 +78,7 @@ namespace aveditor
 		{
 			for (int i = 0; i < (int)EStreamType::ST_Size; i++)
 			{
-				m_nStreams[i] = i;
+				if (n_nStreams & (1 << i)) m_nStreams[i] = i;
 			}
 		}
 		else

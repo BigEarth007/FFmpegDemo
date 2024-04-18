@@ -40,7 +40,7 @@ namespace aveditor
 	{
 		m_CtxHandle = n_CtxHandle;
 
-		if (m_CtxHandle && m_Context.IsValid())
+		if (m_CtxHandle)
 		{
 			auto vCodec = m_Context.GetCodecContext(EStreamType::ST_Video);
 			if (vCodec)

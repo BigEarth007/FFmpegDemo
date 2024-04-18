@@ -104,6 +104,8 @@ namespace aveditor
 
 	AVStream* FFormatContext::BuildStream(AVStream* n_Stream)
 	{
+		if (!n_Stream) return nullptr;
+
 		AVStream* Stream = avformat_new_stream(m_Context, nullptr);
 		ThrowExceptionExpr(!Stream, "Fail to create stream\n");
 
@@ -365,6 +367,8 @@ namespace aveditor
 
 	FCodecContext* FFormatContext::BuildEncodeCodecContext(AVStream* n_Stream)
 	{
+		if (!n_Stream) return nullptr;
+
 		const AVCodec* Codec = FCodecContext::FindEncodeCodec(n_Stream->codecpar->codec_id);
 
 		EStreamType eStreamType = MediaType2StreamType(Codec->type);

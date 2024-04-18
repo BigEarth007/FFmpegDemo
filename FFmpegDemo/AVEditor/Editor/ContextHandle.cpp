@@ -10,10 +10,7 @@ namespace aveditor
 		int nPlanes = GetVideoPlanes();
 
 		if (1 == nPlanes)
-		{
-			memcpy_s(n_Frame->data[0], n_Frame->linesize[0],
-				n_Data, n_nSize);
-		}
+			memcpy_s(n_Frame->data[0], n_nSize, n_Data, n_nSize);
 	}
 
 	void IContextHandle::FillAudioFrame(AVFrame* n_Frame,

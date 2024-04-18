@@ -22,22 +22,22 @@ AVPlayer::AVPlayer(QWidget *parent)
 
 AVPlayer::~AVPlayer()
 {
-	Editor.Stop();
-	Editor.Join();
+	m_Editor.Stop();
+	m_Editor.Join();
 }
 
 void AVPlayer::Init()
 {
 	try
 	{
-		FFormatContext& Input = Editor.OpenInputFile("1.mp4", ETask::T_Normal, kStreamVA);
+		FFormatContext& Input = m_Editor.OpenInputFile("1.mp4", ETask::T_Normal, kStreamVA);
 
 		AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::ST_Video);
 		//AVCodecContext* aCodec = Input.GetCodecContext(EStreamType::EST_Audio);
 
 		// Maybe AVFrame decoded from input context should be convert to target 
 		// sample format/pixel format, so the target codec context should be created
-		FFormatContext& Output = Editor.GetOutputContext()->GetContext();
+		FFormatContext& Output = m_Editor.GetOutputContext()->GetContext();
 		Output.BuildEncodeCodecContext(AVCodecID::AV_CODEC_ID_RAWVIDEO, vCodec);
 		//Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_VIDEO));
 
@@ -50,15 +50,32 @@ void AVPlayer::Init()
 			AVPixelFormat::AV_PIX_FMT_RGB24);
 
 		AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
-		aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
+		if (aoCodec) aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
 
-		Editor.SetOutputIOHandle(this);
-		Editor.SetMaxBufferSize(0);
+		if (m_AudioOutput == nullptr && aoCodec)
+		{
+			QAudioFormat format;
+			format.setSampleRate(aoCodec->sample_rate);						// 例如：44.1 kHz  
+			format.setChannelCount(aoCodec->ch_layout.nb_channels);			// 例如：立体声  
+			int nFmt = GetBytesPerSample(aoCodec->sample_fmt);
+			format.setSampleSize(nFmt * 8);									// 例如：16位样本  
+			format.setCodec("audio/pcm");									// 例如：PCM编码  
+			format.setByteOrder(QAudioFormat::LittleEndian);				// 字节序  
+			format.setSampleType(QAudioFormat::SignedInt);					// 样本类型
 
-		Editor.SetFinishedCallback(
+			m_nBytesPerSample = nFmt * aoCodec->ch_layout.nb_channels;
+			m_dDurionPerSample = 1.0 / aoCodec->sample_rate;
+
+			QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+
+			m_AudioOutput = new QAudioOutput(info, format, this);
+			m_AudioOutput->setBufferSize(knMaxBufferSize);
+		}
+
+		m_Editor.SetFinishedCallback(
 			[this]() {
 
-				m_Device->close();
+				if (m_Device) m_Device->close();
 				if (m_AudioOutput)
 				{
 					m_AudioOutput->stop();
@@ -66,32 +83,10 @@ void AVPlayer::Init()
 				}
 			});
 
-		//m_bIsAudioExists = false;
-		if (m_AudioOutput == nullptr)
-		{
-			QAudioFormat format;
-			format.setSampleRate(aoCodec->sample_rate);						// 例如：44.1 kHz  
-			format.setChannelCount(aoCodec->ch_layout.nb_channels);			// 例如：立体声  
-			int nFmt = GetBytesPerSample(aoCodec->sample_fmt);
-			format.setSampleSize(nFmt * 8);   // 例如：16位样本  
-			format.setCodec("audio/pcm");									// 例如：PCM编码  
-			format.setByteOrder(QAudioFormat::LittleEndian); // 字节序  
-			format.setSampleType(QAudioFormat::SignedInt);   // 样本类型
+		m_Editor.SetOutputIOHandle(this);
+		m_Editor.SetMaxBufferSize(0);
 
-			m_nBytesPerSample = nFmt * aoCodec->ch_layout.nb_channels;
-			m_dDurionPerSample = 1.0 / aoCodec->sample_rate;
-
-			QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-			qDebug() << info.deviceName();
-
-			if (!info.isFormatSupported(format))
-			{
-				qDebug() << "not support";
-			}
-
-			m_AudioOutput = new QAudioOutput(info, format, this);
-			m_AudioOutput->setBufferSize(knMaxBufferSize);
-		}
+		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
 	}
 	catch (const std::exception& e)
 	{
@@ -105,6 +100,9 @@ int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataTy
 	// play frame
 	// ...
 	//DebugLog("Output frame %d, Type %d\n", n_eStreamType, n_eType);
+
+	if (n_Data) m_nStreamMark |= (1 << (int)n_eStreamType);
+	else m_nStreamMark &= ~(1 << (int)n_eStreamType);
 
 	switch (n_eStreamType)
 	{
@@ -128,17 +126,15 @@ void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
 	double dTimestamp = n_Frame->pts * av_q2d(n_Frame->time_base);
 	int offset = (dTimestamp - m_dTime) * 1000 * 1000;
 
-	if (m_bIsAudioExists)
+	while (m_nStreamMark != m_nSelectedStreams)
 	{
-		m_bReady[0] = true;
-		while (!m_bReady[1])
-		{
-			// Wait audio stream coming
-			std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
-		}
+		// Wait audio stream coming
+		std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
 	}
-	else
+
+	if ((m_nSelectedStreams & (1 << (int)EStreamType::ST_Audio)) == 0)
 	{
+		// The audio stream is not exists
 		m_dTime = dTimestamp;
 	}
 
@@ -155,13 +151,6 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 {
 	if (!m_AudioOutput) return;
 
-	m_bReady[1] = true;
-	while (!m_bReady[0])
-	{
-		// Wait video stream coming
-		std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
-	}
-
 	QAudio::State st = m_AudioOutput->state();
 	if (m_Device &&
 		(st == QAudio::State::IdleState || st == QAudio::State::ActiveState))
@@ -170,6 +159,12 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 
 		if (n_Frame)
 		{
+			while (m_nStreamMark != m_nSelectedStreams)
+			{
+				// Wait video stream coming
+				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
+			}
+
 			while (nFree < n_Frame->nb_samples * m_nBytesPerSample)
 			{
 				nFree = m_AudioOutput->bytesFree();
@@ -207,24 +202,22 @@ void AVPlayer::SamplesRemainInBuffer(int n_nFree)
 
 void AVPlayer::OnPlayClicked()
 {
-	Editor.Stop();
+	m_Editor.Stop();
 
-	if (Editor.GetStatus() == EEditStatus::ES_Stopped)
+	if (m_Editor.GetStatus() == EEditStatus::ES_Stopped)
 	{
 		Init();
 
 		m_dTime = 0;
+
 		if (m_AudioOutput) m_Device = m_AudioOutput->start();
-		Editor.Start();
+		m_Editor.Start();
 	}
 }
 
 void AVPlayer::OnStopClicked()
 {
-	if (Editor.GetStatus() == EEditStatus::ES_Running)
-	{
-		Editor.Stop();
-	}
+	m_Editor.Stop();
 }
 
 void AVPlayer::slotVideoArrived(const QPixmap n_Pixmap)

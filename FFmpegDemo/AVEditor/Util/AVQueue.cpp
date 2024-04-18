@@ -39,22 +39,26 @@ namespace aveditor
 	int CAVQueue::Pop(EDataType& n_eItemType,
 		void*& n_Data, const int n_nTimeout)
 	{
+		if (m_eItemType == EDataType::DT_None) return -1;
 		n_eItemType = m_eItemType;
 		return m_qBuffer.Pop(n_Data, n_nTimeout);
 	}
 
 	int CAVQueue::Pop(void*& n_Data, const int n_nTimeout)
 	{
+		if (m_eItemType == EDataType::DT_None) return -1;
 		return m_qBuffer.Pop(n_Data, n_nTimeout);
 	}
 
 	int CAVQueue::Front(void*& n_Data)
 	{
+		if (m_eItemType == EDataType::DT_None) return -1;
 		return m_qBuffer.Front(n_Data);
 	}
 
 	int CAVQueue::Front(EDataType& n_eItemType, void*& n_Data)
 	{
+		if (m_eItemType == EDataType::DT_None) return -1;
 		n_eItemType = m_eItemType;
 		return m_qBuffer.Front(n_Data);
 	}

@@ -41,12 +41,13 @@ private:
 	QAudioOutput*	m_AudioOutput = nullptr;
 	QIODevice*		m_Device = nullptr;
 
-	CEditor			Editor;
+	CEditor			m_Editor;
 
-	// Is audio stream exists
-	bool	m_bIsAudioExists = true;
-	// Indicates audio/video stream arrived
-	bool	m_bReady[2] = { false };
+	// Indicates weather audio/video stream arrived
+	int		m_nStreamMark = 0;
+	// The selected streams of input context
+	int		m_nSelectedStreams = 0;
+
 	// Timer stamp
 	double	m_dTime = 0;
 	// Duration of one Sample
