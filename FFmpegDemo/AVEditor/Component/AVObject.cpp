@@ -128,14 +128,17 @@ namespace aveditor
 
 	void CAVObject::SetEndFlag()
 	{
-		for (size_t i = 0; i < m_vDecodeComp.size(); i++)
+		if (!m_Editor->GetOutputContext()->IsValid())
 		{
-			m_vDecodeComp[i]->ForceStop();
-		}
+			for (size_t i = 0; i < m_vDecodeComp.size(); i++)
+			{
+				m_vDecodeComp[i]->ForceStop();
+			}
 
-		m_AudioMixComp.ForceStop();
-		m_EncodeComp.ForceStop();
-		m_MuxerComp.ForceStop();
+			m_AudioMixComp.ForceStop();
+			m_EncodeComp.ForceStop();
+			m_MuxerComp.ForceStop();
+		}
 
 		for (size_t i = 0; i < m_vDemuxComp.size(); i++)
 		{
