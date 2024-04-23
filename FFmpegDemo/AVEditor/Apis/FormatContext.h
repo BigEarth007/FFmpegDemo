@@ -22,7 +22,7 @@ namespace aveditor
 		// Get the count of stream
 		const unsigned int StreamSize();
 		// The length of the context
-		const double Duration();
+		const double Length();
 
 		// Is this context valid
 		const bool IsValid() const;

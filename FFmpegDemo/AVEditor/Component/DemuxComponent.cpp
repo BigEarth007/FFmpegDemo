@@ -40,7 +40,6 @@ namespace aveditor
 
 		int				ret = 0;
 		int64_t			nPts = 0;
-		double			dSecond = 0;
 		AVStream*		Stream = nullptr;
 		AVPacket*		Packet = av_packet_alloc();
 		EStreamType		eStreamType = EStreamType::ST_Size;
@@ -76,28 +75,19 @@ namespace aveditor
 			}
 
 			// Check weather this packet is during the section
-			if (InputContext->GetSectionFrom() > 0)
+			nPts = InputContext->IsPacketInSelectedSection(
+				Packet, Stream->time_base);
+			if (nPts == AVERROR_EOF)
 			{
-				dSecond = Packet->pts * av_q2d(Stream->time_base);
-
-				if (dSecond < InputContext->GetSectionFrom())
-					break;
-
-				if (InputContext->GetSectionTo() > 0 &&
-					dSecond > InputContext->GetSectionTo())
-				{
-					WriteData(eStreamType, nullptr,
-						EDataType::DT_Packet, InputContext->GetSubnumber());
-					SetStreamEndFlag(eStreamType, 1);
-					break;
-				}
-
-				nPts = (int64_t)(InputContext->GetSectionFrom() /
-					av_q2d(Stream->time_base));
-
-				Packet->pts -= nPts;
-				Packet->dts -= nPts;
-				Packet->pos = -1;
+				WriteData(eStreamType, nullptr,
+					EDataType::DT_Packet, InputContext->GetSubnumber());
+				SetStreamEndFlag(eStreamType, 1);
+				break;
+			}
+			else if (nPts == -2)
+			{
+				// not in selected section
+				break;
 			}
 
 			auto itr = m_OutputCodecContext->find(eStreamType);

@@ -203,16 +203,25 @@ namespace aveditor
 		return nResult;
 	}
 
-	void CEditor::SelectSection(const double n_dStart,
-		const double n_dDuration /*= 0*/, const int& n_nContextIndex /*= 0*/)
+	void CEditor::AddSelectedSection(const double n_dStart,
+		const double n_dLength /*= 0*/, const int& n_nContextIndex /*= 0*/)
 	{
 		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
 			"Invalid parameter.\n");
 
-		m_vInputContext[n_nContextIndex]->SelectSection(n_dStart, n_dDuration);
+		m_vInputContext[n_nContextIndex]->AddSelectedSection(n_dStart, n_dLength);
 	}
 
-	void CEditor::WriteFrameDatas(EStreamType n_eStreamType, 
+	void CEditor::RemoveSelectedSection(const size_t& n_nSectionIndex, 
+		const int& n_nContextIndex /*= 0*/)
+	{
+		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
+			"Invalid parameter.\n");
+
+		m_vInputContext[n_nContextIndex]->RemoveSelectedSection(n_nSectionIndex);
+	}
+
+	void CEditor::WriteFrameDatas(EStreamType n_eStreamType,
 		const void* n_Data, const int& n_nSize, const int& n_nContextIndex /*= 0*/)
 	{
 		ThrowExceptionExpr(n_nContextIndex >= m_vInputContext.size(),
@@ -230,7 +239,11 @@ namespace aveditor
 		}
 		else if (m_eStatus == EEditStatus::ES_Running)
 		{
-			Stop();
+			Pause();
+		}
+		else if (m_eStatus == EEditStatus::ES_Pause)
+		{
+			SetStagesPause(false);
 		}
 	}
 
@@ -238,15 +251,22 @@ namespace aveditor
 	{
 		if (m_eStatus == EEditStatus::ES_Running)
 		{
-			Thread::Stop();
-
 			m_eStatus = EEditStatus::ES_ForceStop;
 			m_AVObject.SetEndFlag();
 		}
 		else if (m_eStatus == EEditStatus::ES_Stopped)
 		{
-			Thread::Stop();
+			Release();
 		}
+
+		// If not call this function, it can't start again
+		Thread::Stop();
+	}
+
+	void CEditor::Pause()
+	{
+		if (m_eStatus == EEditStatus::ES_Running)
+			SetStagesPause(true);
 	}
 
 	bool CEditor::IsStop()
@@ -260,6 +280,11 @@ namespace aveditor
 		{
 			m_vStages[i]->SetPause(n_bPause);
 		}
+
+		if (n_bPause && m_eStatus == EEditStatus::ES_Running)
+			m_eStatus = EEditStatus::ES_Pause;
+		else if (!n_bPause && m_eStatus == EEditStatus::ES_Pause)
+			m_eStatus = EEditStatus::ES_Running;
 	}
 
 	EEditStatus CEditor::GetStatus() const

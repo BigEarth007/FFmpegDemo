@@ -65,7 +65,7 @@ namespace aveditor
 		return m_Context->nb_streams;
 	}
 
-	const double FFormatContext::Duration()
+	const double FFormatContext::Length()
 	{
 		return m_Context ? m_Context->duration * 1.0 / AV_TIME_BASE : 0;
 	}
@@ -285,6 +285,8 @@ namespace aveditor
 					Stream->codecpar->codec_id);
 
 				eStreamType = MediaType2StreamType(Stream->codecpar->codec_type);
+				if (eStreamType == EStreamType::ST_Size) continue;
+
 				AVCodecContext* ctx = m_mCodecContext[eStreamType].Alloc(Codec);
 				m_mCodecContext[eStreamType].CopyCodecParameter(Stream);
 				ctx->pkt_timebase = ctx->time_base;
@@ -337,6 +339,7 @@ namespace aveditor
 		const AVCodec* Codec = FCodecContext::FindEncodeCodec(n_eCodecID);
 
 		EStreamType eStreamType = MediaType2StreamType(Codec->type);
+		if (eStreamType == EStreamType::ST_Size) return nullptr;
 		AVCodecContext* ctx = m_mCodecContext[eStreamType].Alloc(Codec);
 
 		if (n_InputCodecContext)
@@ -372,6 +375,7 @@ namespace aveditor
 		const AVCodec* Codec = FCodecContext::FindEncodeCodec(n_Stream->codecpar->codec_id);
 
 		EStreamType eStreamType = MediaType2StreamType(Codec->type);
+		if (eStreamType == EStreamType::ST_Size) return nullptr;
 		AVCodecContext* ctx = m_mCodecContext[eStreamType].Alloc(Codec);
 
 		m_mCodecContext[eStreamType].CopyCodecParameter(n_Stream);

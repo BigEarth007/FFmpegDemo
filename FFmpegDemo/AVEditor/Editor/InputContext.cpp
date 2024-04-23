@@ -7,10 +7,6 @@ namespace aveditor
 	CInputContext::CInputContext(CEditor& n_Editor, const int n_nContextIndex)
 		: CBaseContext(n_Editor, n_nContextIndex)
 	{
-		for (int i = 0;i < (int)EStreamType::ST_Size; i++)
-		{
-			m_nStreams[i] = -1;
-		}
 	}
 
 	CInputContext::~CInputContext()
@@ -34,22 +30,18 @@ namespace aveditor
 		return m_Context;
 	}
 
-	const double CInputContext::Duration()
+	const double CInputContext::Length()
 	{
-		double dDuration = m_dSectionTo - m_dSectionFrom;
-		if (dDuration == 0) dDuration = m_Context.Duration();
+		double dLength = 0;
 
-		return dDuration;
-	}
+		for (size_t i = 0; i < m_vSections.size(); i++)
+		{
+			dLength += m_vSections[i].dTo - m_vSections[i].dFrom;
+		}
 
-	const double CInputContext::GetSectionFrom() const
-	{
-		return m_dSectionFrom;
-	}
+		if (dLength == 0) dLength = m_Context.Length();
 
-	const double CInputContext::GetSectionTo() const
-	{
-		return m_dSectionTo;
+		return dLength;
 	}
 
 	const std::string CInputContext::GetName() const
@@ -86,22 +78,18 @@ namespace aveditor
 			// It's a valid input file
 			AVStream* Stream = nullptr;
 
-			for (unsigned int i = 0, j = 0; i < m_Context.m_Context->nb_streams; i++)
+			for (int i = 0;i < (int)EStreamType::ST_Size; i++)
 			{
-				Stream = m_Context.m_Context->streams[i];
-				if (Stream->codecpar->codec_type != AVMediaType::AVMEDIA_TYPE_UNKNOWN &&
-					Stream->codecpar->codec_id != AVCodecID::AV_CODEC_ID_NONE)
+				m_nStreams[i] = -1;
+				if (n_nStreams & (1 << i))
 				{
-					EStreamType eStreamType = MediaType2StreamType(
-						Stream->codecpar->codec_type);
-					if (n_nStreams & (1 << (int)eStreamType))
-					{
-						// The stream index of context should start from 0, but the 
-						// index of stream that we need may not start from 0. 
-						// For example, detach audio stream from input context, 
-						// and then write into output context
-						m_nStreams[(int)eStreamType] = j++;
-					}
+					AVMediaType eMediaType = StreamType2MediaType((EStreamType)i);
+
+					if (eMediaType == AVMediaType::AVMEDIA_TYPE_UNKNOWN)
+						continue;
+
+					Stream = m_Context.FindStream(eMediaType);
+					if (Stream) m_nStreams[i] = Stream->index;
 				}
 			}
 		}
@@ -150,19 +138,123 @@ namespace aveditor
 		return m_nBatchIndex;
 	}
 
-	void CInputContext::SelectSection(const double n_dStart, 
-		const double n_dDuration /*= 0*/)
+	void CInputContext::AddSelectedSection(const double n_dStart, 
+		const double n_dLength /*= 0*/)
 	{
-		double dDuration = m_Context.Duration();
+		double dLength = m_Context.Length();
+		if (n_dStart >= dLength) return;
 
-		if (n_dStart > dDuration || n_dStart <= 0)
-			return;
+		FSection Section;
 
-		m_dSectionFrom = n_dStart;
-		if (n_dDuration > 0)
-			m_dSectionTo = m_dSectionFrom + n_dDuration;
+		Section.dFrom = n_dStart;
+		if (Section.dFrom < 0) Section.dFrom = 0;
+
+		Section.dTo = Section.dFrom + n_dLength;
+		if (Section.dTo > dLength || n_dLength == 0) 
+			Section.dTo = dLength;
+
+		if (m_vSections.size() == 0)
+		{
+			m_vSections.emplace_back(Section);
+		}
 		else
-			m_dSectionTo = dDuration;
+		{
+			int nFlag = 0;
+			std::vector<FSection> vTemp(m_vSections.begin(), m_vSections.end());
+			m_vSections.clear();
+
+			for (size_t i = 0; i < vTemp.size(); i++)
+			{
+				if (nFlag == 0)
+				{
+					if (vTemp[i].dFrom > Section.dFrom)
+					{
+						nFlag++;
+						i--;
+					}
+					else if (vTemp[i].dTo > Section.dFrom)
+					{
+						Section.dFrom = vTemp[i].dFrom;
+						nFlag++;
+						i--;
+					}
+					else
+					{
+						m_vSections.emplace_back(vTemp[i]);
+						if (i + 1 == vTemp.size())
+							m_vSections.emplace_back(Section);
+					}
+				}
+				else if (nFlag == 1)
+				{
+					if (vTemp[i].dFrom >= Section.dTo)
+					{
+						nFlag++;
+						m_vSections.emplace_back(Section);
+						m_vSections.emplace_back(vTemp[i]);
+					}
+					else if (vTemp[i].dTo >= Section.dTo)
+					{
+						Section.dTo = vTemp[i].dTo;
+						nFlag++;
+						m_vSections.emplace_back(Section);
+					}
+					else if (vTemp[i].dTo < Section.dTo)
+					{
+						if (i + 1 == vTemp.size())
+							m_vSections.emplace_back(Section);
+					}
+				}
+				else
+				{
+					m_vSections.emplace_back(vTemp[i]);
+				}
+			}
+		}
+	}
+
+	void CInputContext::RemoveSelectedSection(const size_t& n_nSectionIndex)
+	{
+		if (n_nSectionIndex < m_vSections.size())
+			m_vSections.erase(m_vSections.begin() + n_nSectionIndex);
+	}
+
+	int64_t CInputContext::IsPacketInSelectedSection(AVPacket* n_Packet,
+		const AVRational& n_TimeBase)
+	{
+		if (m_vSections.size() == 0) return -1;
+
+		int64_t nPts = AVERROR_EOF;
+		size_t i = 0;
+		double dDuration = 0;
+		double dSecond = n_Packet->pts * av_q2d(n_TimeBase);
+
+		for (i = 0;i < m_vSections.size(); i++)
+		{
+			if (dSecond < m_vSections[i].dFrom)
+				break;
+
+			dDuration += m_vSections[i].dFrom;
+			if (i > 0) dDuration -= m_vSections[i - 1].dTo;
+
+			if (m_vSections[i].dFrom <= dSecond &&
+				m_vSections[i].dTo > dSecond)
+			{
+				nPts = (int64_t)(dDuration / av_q2d(n_TimeBase));
+				break;
+			}
+		}
+
+		if (nPts != AVERROR_EOF)
+		{
+			n_Packet->pts -= nPts;
+			n_Packet->dts -= nPts;
+			n_Packet->pos = -1;
+			return i;
+		}
+		if (i == m_vSections.size()) return nPts;
+
+		return -2;
 	}
 
 	void CInputContext::WriteFrameDatas(EStreamType n_eStreamType,

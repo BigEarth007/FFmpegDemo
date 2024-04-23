@@ -159,7 +159,7 @@ namespace aveditor
 
 	void CAVObject::ResetComponents()
 	{
-		double dDuration = Duration();
+		double dDuration = CalcLength();
 		// Set current duration for media appending
 		m_MuxerComp.AddDuration(dDuration);
 
@@ -170,28 +170,28 @@ namespace aveditor
 		m_MuxerComp.Release();
 	}
 
-	double CAVObject::Duration()
+	double CAVObject::CalcLength()
 	{
-		double dDuration = 0;
+		double dLength = 0;
 
 		for (size_t i = 0; i < m_vDemuxComp.size(); i++)
 		{
 			CInputContext* Input = m_vDemuxComp[i]->GetInputContext();
 			if (Input->GetTask() == ETask::T_Normal)
-				dDuration = Input->Duration();
+				dLength = Input->Length();
 			else
 			{
 				if (Input->GetStreamIndex(EStreamType::ST_Video) > -1)
-					dDuration = Input->Duration();
+					dLength = Input->Length();
 				else
 				{
-					if (Input->Duration() > dDuration)
-						dDuration = Input->Duration();
+					if (Input->Length() > dLength)
+						dLength = Input->Length();
 				}
 			}
 		}
 
-		return dDuration;
+		return dLength;
 	}
 
 }

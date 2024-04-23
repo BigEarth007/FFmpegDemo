@@ -34,7 +34,7 @@ namespace aveditor
 
 	AVEDITOR_API const EStreamType MediaType2StreamType(const AVMediaType n_eMediaType)
 	{
-		EStreamType eStreamType = EStreamType::ST_Video;
+		EStreamType eStreamType = EStreamType::ST_Size;
 
 		switch (n_eMediaType)
 		{

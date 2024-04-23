@@ -85,6 +85,9 @@ void AVPlayer::Init()
 
 		m_Editor.SetOutputIOHandle(this);
 		m_Editor.SetMaxBufferSize(0);
+		
+		//m_Editor.AddSelectedSection(5, 10);
+		//m_Editor.AddSelectedSection(22, 6);
 
 		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
 	}
@@ -126,7 +129,7 @@ void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
 	double dTimestamp = n_Frame->pts * av_q2d(n_Frame->time_base);
 	int offset = (dTimestamp - m_dTime) * 1000 * 1000;
 
-	while (m_nStreamMark != m_nSelectedStreams)
+	while (m_dTime == 0 && m_nStreamMark != m_nSelectedStreams)
 	{
 		// Wait audio stream coming
 		std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
@@ -159,7 +162,7 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 
 		if (n_Frame)
 		{
-			while (m_nStreamMark != m_nSelectedStreams)
+			while (m_dTime == 0 && m_nStreamMark != m_nSelectedStreams)
 			{
 				// Wait video stream coming
 				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
@@ -202,8 +205,6 @@ void AVPlayer::SamplesRemainInBuffer(int n_nFree)
 
 void AVPlayer::OnPlayClicked()
 {
-	m_Editor.Stop();
-
 	if (m_Editor.GetStatus() == EEditStatus::ES_Stopped)
 	{
 		Init();
@@ -211,8 +212,9 @@ void AVPlayer::OnPlayClicked()
 		m_dTime = 0;
 
 		if (m_AudioOutput) m_Device = m_AudioOutput->start();
-		m_Editor.Start();
 	}
+
+	m_Editor.Start();
 }
 
 void AVPlayer::OnStopClicked()

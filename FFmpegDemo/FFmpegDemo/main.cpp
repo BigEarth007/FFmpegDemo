@@ -39,12 +39,12 @@ static void Cover()
 		Output.BuildStream(mOutput->at(EStreamType::EST_Video));
 		Output.BuildStream(mOutput->at(EStreamType::EST_Audio));
 #endif
-		
+		// Split the input context into fragments
+		// It can be used to cut input file
+		Editor.AddSelectedSection(5, 10);
+		Editor.AddSelectedSection(17, 12);
+
 		Editor.OpenOutputFile();
-		 
-		//CDemuxer* Demuxer = (CDemuxer*)Editor.GetCache().GetContextInfo(0)->Demuxer;
-		// We just need one section of the input context, it can be used for video cut
-		//Demuxer->SelectSection(70, 330);
 
 		Editor.Start();
 		Editor.Join();
@@ -347,7 +347,7 @@ int main()
 	//SetupEditorLog();
 	
 	//Cover();
-	Concat();
+	//Concat();
 	//DetachAudioStream();
 	//MixAudio();
 	//Play();

@@ -43,7 +43,7 @@ namespace aveditor
 		void ResetComponents();
 
 		// Calculate duration of last batch
-		double Duration();
+		double CalcLength();
 
 	protected:
 		CEditor*						m_Editor = nullptr;

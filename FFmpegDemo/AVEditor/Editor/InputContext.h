@@ -14,10 +14,7 @@ namespace aveditor
 			AVDictionary* n_Options = nullptr);
 
 		// The length of the context
-		const double Duration();
-
-		const double GetSectionFrom() const;
-		const double GetSectionTo() const;
+		const double Length();
 
 		// Get context name
 		const std::string GetName() const;
@@ -49,8 +46,20 @@ namespace aveditor
 
 		// Set time section; it's second;
 		// const double n_dStart: start timestamp
-		// const double n_dDuration: time duration, 0 means to the end
-		void SelectSection(const double n_dStart, const double n_dDuration = 0);
+		// const double n_dLength: time duration, 0 means to the end
+		void AddSelectedSection(const double n_dStart, const double n_dLength = 0);
+
+		// Remove section
+		void RemoveSelectedSection(const size_t& n_nSectionIndex);
+
+		// Check weather packet in selected section
+		// return value: 
+		//	>0: the index of section which n_Packet located
+		//	-1: no need to check, no section is specified
+		//	-2: not in selected section
+		//	AVERROR_EOF: n_nPts overflows the last section, it can be end
+		int64_t IsPacketInSelectedSection(AVPacket* n_Packet, 
+			const AVRational& n_TimeBase);
 
 		// Write Frame data into this empty input file
 		// if n_Data is nullptr, then write nullptr frame
@@ -64,6 +73,15 @@ namespace aveditor
 			const void* n_Data, const int& n_nSize);
 		AVFrame* WriteAudioFrame(AVCodecContext* n_CodecContext,
 			const void* n_Data, const int& n_nSize);
+
+		// The selected section of the input context
+		struct FSection
+		{
+			// Section start time; 0: meams not in use
+			double dFrom = 0;
+			// Section end time; 0: meams to end
+			double dTo = 0;
+		};
 
 	protected:
 		// What to do with this input context
@@ -81,15 +99,13 @@ namespace aveditor
 		// Index of the batch
 		int		m_nSubnumber = 0;
 
-		// Section start time; 0: meams not in use
-		double	m_dSectionFrom = 0;
-		// Section end time; 0: meams to end
-		double	m_dSectionTo = 0;
-
 		// For recording PCM data begin
 		// Frame index of video
 		int64_t	m_nVideoFrameIndex = 0;
 		// PTS of audio frame
 		int64_t	m_nAudioFramePts = 0;
+
+		// Selected sections
+		std::vector<FSection>	m_vSections;
 	};
 }

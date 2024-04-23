@@ -9,6 +9,8 @@ namespace aveditor
 		ES_ForceStop,
 		// It's stopped
 		ES_Stopped,
+		// It's paused
+		ES_Pause,
 		// It's running
 		ES_Running,
 		// It's stopping
@@ -72,8 +74,12 @@ namespace aveditor
 
 		// Set time section; it's second;
 		// const double n_dStart: start timestamp
-		// const double n_dDuration: time duration, 0 means to the end
-		void SelectSection(const double n_dStart, const double n_dDuration = 0,
+		// const double n_dLength: time duration, 0 means to the end
+		void AddSelectedSection(const double n_dStart, const double n_dLength = 0,
+			const int& n_nContextIndex = 0);
+
+		// Remove section
+		void RemoveSelectedSection(const size_t& n_nSectionIndex,
 			const int& n_nContextIndex = 0);
 
 		// Write Frame data into this empty input file
@@ -84,6 +90,7 @@ namespace aveditor
 
 		virtual void Start();
 		virtual void Stop();
+		virtual void Pause();
 		virtual bool IsStop();
 
 		void SetStagesPause(bool n_bPause);
