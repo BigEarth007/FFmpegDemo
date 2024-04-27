@@ -222,37 +222,42 @@ namespace aveditor
 	int64_t CInputContext::IsPacketInSelectedSection(AVPacket* n_Packet,
 		const AVRational& n_TimeBase)
 	{
-		if (m_vSections.size() == 0) return -1;
+		if (m_vSections.size() == 0 || !n_Packet) return -1;
 
-		int64_t nPts = AVERROR_EOF;
 		size_t i = 0;
-		double dDuration = 0;
+
+		int64_t nSection = 0;
 		double dSecond = n_Packet->pts * av_q2d(n_TimeBase);
 
-		for (i = 0;i < m_vSections.size(); i++)
+		for (i = 0; i < m_vSections.size(); i++)
 		{
 			if (dSecond < m_vSections[i].dFrom)
 				break;
 
-			dDuration += m_vSections[i].dFrom;
-			if (i > 0) dDuration -= m_vSections[i - 1].dTo;
-
 			if (m_vSections[i].dFrom <= dSecond &&
 				m_vSections[i].dTo > dSecond)
 			{
-				nPts = (int64_t)(dDuration / av_q2d(n_TimeBase));
-				break;
+				if (m_vSections[i].nFrom[n_Packet->stream_index] == AVERROR_EOF)
+					m_vSections[i].nFrom[n_Packet->stream_index] = n_Packet->pts;
+
+				n_Packet->pts = n_Packet->pts - 
+					m_vSections[i].nFrom[n_Packet->stream_index]
+					+ nSection;
+
+				n_Packet->dts = n_Packet->pts;
+				n_Packet->pos = -1;
+
+				return i;
 			}
+
+			if (m_vSections[i].nTo[n_Packet->stream_index] == AVERROR_EOF)
+				m_vSections[i].nTo[n_Packet->stream_index] = n_Packet->pts;
+
+			nSection += m_vSections[i].nTo[n_Packet->stream_index] -
+				m_vSections[i].nFrom[n_Packet->stream_index];
 		}
 
-		if (nPts != AVERROR_EOF)
-		{
-			n_Packet->pts -= nPts;
-			n_Packet->dts -= nPts;
-			n_Packet->pos = -1;
-			return i;
-		}
-		if (i == m_vSections.size()) return nPts;
+		if (i == m_vSections.size()) return AVERROR_EOF;
 
 		return -2;
 	}

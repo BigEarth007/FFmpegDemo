@@ -28,7 +28,7 @@ namespace aveditor
 		for (auto itr = OutputCodecContext->begin();
 			itr != OutputCodecContext->end(); itr++)
 		{
-			m_TimeSync[(int)itr->first].dTimestamp = 0;
+			m_TimeSync[(int)itr->first].dTimestamp = -AV_NOPTS_VALUE;
 			m_TimeSync[(int)itr->first].dTimebase =
 				av_q2d(itr->second.m_Context->time_base);
 
@@ -66,7 +66,7 @@ namespace aveditor
 			for (auto itr = OutputCodecContext->begin();
 				itr != OutputCodecContext->end(); itr++)
 			{
-				m_TimeSync[(int)itr->first].dTimestamp = 0;
+				m_TimeSync[(int)itr->first].dTimestamp = -AV_NOPTS_VALUE;
 				m_TimeSync[(int)itr->first].nHold = 0;
 				SetStreamEndFlag(itr->first, 0);
 			}

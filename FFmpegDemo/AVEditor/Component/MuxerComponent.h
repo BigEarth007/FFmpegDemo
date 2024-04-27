@@ -42,8 +42,8 @@ namespace aveditor
 
 		struct FTimeSync
 		{
-			double		dTimebase = 0.0f;
-			double		dTimestamp = 0.0f;
+			double		dTimebase = -AV_NOPTS_VALUE;
+			double		dTimestamp = -AV_NOPTS_VALUE;
 			// 1: hold data
 			// 0: empty
 			int			nHold = 0;

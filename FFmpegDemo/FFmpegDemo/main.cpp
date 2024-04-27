@@ -41,8 +41,9 @@ static void Cover()
 #endif
 		// Split the input context into fragments
 		// It can be used to cut input file
-		Editor.AddSelectedSection(5, 10);
-		Editor.AddSelectedSection(17, 12);
+		Editor.AddSelectedSection(5, 5);
+		Editor.AddSelectedSection(13, 6);
+		Editor.AddSelectedSection(22, 5);
 
 		Editor.OpenOutputFile();
 
@@ -346,7 +347,7 @@ int main()
 	auto start = std::chrono::steady_clock::now();
 	//SetupEditorLog();
 	
-	//Cover();
+	Cover();
 	//Concat();
 	//DetachAudioStream();
 	//MixAudio();

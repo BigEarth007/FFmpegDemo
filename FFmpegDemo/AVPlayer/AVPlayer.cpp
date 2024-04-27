@@ -86,8 +86,8 @@ void AVPlayer::Init()
 		m_Editor.SetOutputIOHandle(this);
 		m_Editor.SetMaxBufferSize(0);
 		
-		//m_Editor.AddSelectedSection(5, 10);
-		//m_Editor.AddSelectedSection(22, 6);
+		m_Editor.AddSelectedSection(5, 10);
+		m_Editor.AddSelectedSection(22, 6);
 
 		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
 	}

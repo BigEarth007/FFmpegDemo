@@ -54,10 +54,10 @@ namespace aveditor
 
 		// Check weather packet in selected section
 		// return value: 
-		//	>0: the index of section which n_Packet located
+		//	0: n_Packet in selected section
 		//	-1: no need to check, no section is specified
 		//	-2: not in selected section
-		//	AVERROR_EOF: n_nPts overflows the last section, it can be end
+		//	AVERROR_EOF: timestamp of n_Packet overflows the last section, it can be end
 		int64_t IsPacketInSelectedSection(AVPacket* n_Packet, 
 			const AVRational& n_TimeBase);
 
@@ -81,6 +81,18 @@ namespace aveditor
 			double dFrom = 0;
 			// Section end time; 0: meams to end
 			double dTo = 0;
+
+			int64_t nFrom[(int)EStreamType::ST_Size] = { 0 };
+			int64_t nTo[(int)EStreamType::ST_Size] = { 0 };
+
+			FSection()
+			{
+				for (int i = 0; i < (int)EStreamType::ST_Size; i++)
+				{
+					nFrom[i] = AVERROR_EOF;
+					nTo[i] = AVERROR_EOF;
+				}
+			}
 		};
 
 	protected:
