@@ -335,7 +335,7 @@ namespace aveditor
 		}
 		catch (const std::exception& e)
 		{
-			DebugLog(e.what());
+			AVDebug(e.what());
 		}
 
 		Thread::Run();

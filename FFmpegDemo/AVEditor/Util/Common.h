@@ -105,9 +105,9 @@ namespace aveditor
 
 	// debug log info
 #ifdef _DEBUG
-#define DebugLog(fmt, ...) LogInfo(fmt, __VA_ARGS__)
+#define AVDebug(fmt, ...) LogInfo(fmt, __VA_ARGS__)
 #else
-#define DebugLog(fmt, ...)
+#define AVDebug(fmt, ...)
 #endif // DEBUG
 
 	template<typename T, typename R>

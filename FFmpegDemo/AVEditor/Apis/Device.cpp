@@ -45,17 +45,17 @@ namespace aveditor
 
 		for (int i = 0;i < m_Context->nb_devices; i++)
 		{
-			DebugLog("%-16s%s\n", "Name:", m_Context->devices[i]->device_name);
-			DebugLog("%-16s%s\n", "Description:", m_Context->devices[i]->device_description);
+			AVDebug("%-16s%s\n", "Name:", m_Context->devices[i]->device_name);
+			AVDebug("%-16s%s\n", "Description:", m_Context->devices[i]->device_description);
 
 			for (int j = 0;j < m_Context->devices[i]->nb_media_types; j++)
 			{
 				const char* szMedaiType = av_get_media_type_string(
 					m_Context->devices[i]->media_types[j]);
-				DebugLog("%-16s%s\n", "Media Type:", szMedaiType);
+				AVDebug("%-16s%s\n", "Media Type:", szMedaiType);
 			}
 
-			DebugLog("--------------------------------------------------------\n\n");
+			AVDebug("--------------------------------------------------------\n\n");
 		}
 	}
 

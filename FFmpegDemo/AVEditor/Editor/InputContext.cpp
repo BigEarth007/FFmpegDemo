@@ -247,6 +247,12 @@ namespace aveditor
 				n_Packet->dts = n_Packet->pts;
 				n_Packet->pos = -1;
 
+// 				if (n_Packet->stream_index == 0)
+// 				{
+// 					DebugLog("pts: %zd pos: %zd timestamp: %lf\n", n_Packet->pts, n_Packet->pos,
+// 						n_Packet->pts * av_q2d(n_TimeBase));
+// 				}
+
 				return i;
 			}
 
