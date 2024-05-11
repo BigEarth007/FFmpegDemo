@@ -17,6 +17,12 @@ public:
 	int ReceiveData(const aveditorEStreamType n_eStreamType,
 		void* n_Data, aveditorEDataType n_eType, int n_nIndex);
 
+	// Set file to play
+	void SetMediaFile(const QString& n_sMediaFile);
+
+	// Set view to show video image
+	void SetPlayView(QLabel* n_View);
+
 protected:
 	// Load media file
 	void Load();
