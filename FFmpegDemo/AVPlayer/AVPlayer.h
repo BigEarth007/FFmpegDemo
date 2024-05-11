@@ -4,10 +4,8 @@
 #include "ui_AVPlayer.h"
 #include "../AVEditor/AVEditor.h"
 
-using namespace aveditor;
 
-
-class AVPlayer : public QWidget, public IAVIOHandle
+class AVPlayer : public QWidget, public aveditor::IAVIOHandle
 {
     Q_OBJECT
 
@@ -17,15 +15,16 @@ public:
 
 	void Init();
 
-
-	int ReceiveData(const EStreamType n_eStreamType,
-		void* n_Data, EDataType n_eType, int n_nIndex);
-
-	virtual void VideoFrameArrived(const AVFrame* n_Frame);
-	virtual void AudioFrameArrived(const AVFrame* n_Frame);
+	int ReceiveData(const aveditorEStreamType n_eStreamType,
+		void* n_Data, aveditorEDataType n_eType, int n_nIndex);
 
 protected:
-	void SamplesRemainInBuffer(int n_nFree);
+	// Get video frame
+	virtual void VideoFrameArrived(const AVFrame* n_Frame);
+	// Get audio frame
+	virtual void AudioFrameArrived(const AVFrame* n_Frame);
+	// Update playing time stamp
+	void UpdateTime(int n_nFree);
 
 signals:
 	void OnVideoArrived(const QPixmap n_Pixmap);
@@ -38,22 +37,22 @@ protected slots:
 private:
     Ui::AVPlayerClass ui;
 
-	QAudioOutput*	m_AudioOutput = nullptr;
+	QAudioOutput*		m_AudioOutput = nullptr;
 	QIODevice*		m_Device = nullptr;
 
-	CEditor			m_Editor;
+	aveditor::CEditor	m_Editor;
 
 	// Indicates weather audio/video stream arrived
-	int		m_nStreamMark = 0;
+	int			m_nStreamMark = 0;
 	// The selected streams of input context
-	int		m_nSelectedStreams = 0;
+	int			m_nSelectedStreams = 0;
 
 	// Timer stamp
-	double	m_dTime = 0;
+	double			m_dTime = 0;
 	// Duration of one Sample
-	double	m_dDurionPerSample = 0;
-	// How many samples in QAudioOutput buffer
-	int		m_nSamplesInBuffer = 0;
+	double			m_dDurionPerSample = 0;
+	// Number of free bytes in QAudioOutput buffer
+	int			m_nFreeBytes = 0;
 	// How many bytes does a sample occupy
-	int		m_nBytesPerSample = 1;
+	int			m_nBytesPerSample = 1;
 };
