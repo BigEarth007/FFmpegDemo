@@ -18,7 +18,7 @@ public:
 		void* n_Data, aveditorEDataType n_eType, int n_nIndex);
 
 	// Set file to play
-	void SetMediaFile(const QString& n_sMediaFile);
+	void SetMediaFile(const std::string& n_sMediaFile);
 
 	// Set view to show video image
 	void SetPlayView(QLabel* n_View);
@@ -49,7 +49,7 @@ private:
 	QIODevice*		m_Device = nullptr;
 
 	// The file to play
-	QString			m_sMediaFile;
+	std::string		m_sMediaFile;
 	// The view to show video image
 	QLabel*			m_View = nullptr;
 
