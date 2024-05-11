@@ -20,6 +20,7 @@ AVPlayer::AVPlayer(QWidget *parent)
 	connect(this, &AVPlayer::OnVideoArrived,
 		this, &AVPlayer::slotVideoArrived);
 
+	SetMediaFile("1.mp4");
 	SetPlayView(ui.label);
 }
 
@@ -53,7 +54,7 @@ int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataTy
 	return 0;
 }
 
-void AVPlayer::SetMediaFile(const QString& n_sMediaFile)
+void AVPlayer::SetMediaFile(const std::string& n_sMediaFile)
 {
 	m_sMediaFile = n_sMediaFile;
 }
@@ -66,7 +67,7 @@ void AVPlayer::SetPlayView(QLabel* n_View)
 void AVPlayer::Load()
 {
 	if (m_sMediaFile.isEmpty() ||
-		m_Editor.GetStatus() == EEditStatus::ES_Stopped)
+		m_Editor.GetStatus() != EEditStatus::ES_Stopped)
 		return;
 	
 	try
@@ -126,9 +127,10 @@ void AVPlayer::Load()
 
 		m_Editor.SetOutputIOHandle(this);
 		m_Editor.SetMaxBufferSize(0);
-		
-		m_Editor.AddSelectedSection(5, 10);
-		m_Editor.AddSelectedSection(22, 6);
+
+		// for section select
+		//m_Editor.AddSelectedSection(5, 10);
+		//m_Editor.AddSelectedSection(22, 6);
 
 		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
 		m_nFreeBytes = knMaxBufferSize;
@@ -196,8 +198,6 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 			}
 
 			UpdateTime(nFree);
-
-			//qDebug() << "Free: " << nFree << " Remain: " << nRemain << " Cost: " << nCost << " Wrote: " << m_nSamplesWrote;
 
 			m_Device->write(reinterpret_cast<const char*>(n_Frame->data[0]), n_Frame->linesize[0]);
 			m_nFreeBytes = nFree - n_Frame->nb_samples * m_nBytesPerSample;
