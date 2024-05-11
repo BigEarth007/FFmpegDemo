@@ -13,17 +13,19 @@ public:
     AVPlayer(QWidget *parent = nullptr);
     ~AVPlayer();
 
-	void Init();
-
+	// Receive video/audio frames that have been decoded
 	int ReceiveData(const aveditorEStreamType n_eStreamType,
 		void* n_Data, aveditorEDataType n_eType, int n_nIndex);
 
 protected:
+	// Load media file
+	void Load();
 	// Get video frame
 	virtual void VideoFrameArrived(const AVFrame* n_Frame);
 	// Get audio frame
 	virtual void AudioFrameArrived(const AVFrame* n_Frame);
 	// Update playing time stamp
+	// int n_nFree: bytes available in QAudioOutput buffer
 	void UpdateTime(int n_nFree);
 
 signals:
@@ -39,6 +41,11 @@ private:
 
 	QAudioOutput*		m_AudioOutput = nullptr;
 	QIODevice*		m_Device = nullptr;
+
+	// The file to play
+	QString			m_sMediaFile;
+	// The view to show video image
+	QLabel*			m_View = nullptr;
 
 	aveditor::CEditor	m_Editor;
 
