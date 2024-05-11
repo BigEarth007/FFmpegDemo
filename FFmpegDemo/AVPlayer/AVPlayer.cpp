@@ -3,6 +3,7 @@
 #include "AVPlayer.h"
 #pragma comment(lib, "AVEditor.lib")
 
+using namespace aveditor;
 constexpr auto knMaxBufferSize = 10240 * 2;
 
 AVPlayer::AVPlayer(QWidget *parent)
@@ -55,13 +56,13 @@ void AVPlayer::Init()
 		if (m_AudioOutput == nullptr && aoCodec)
 		{
 			QAudioFormat format;
-			format.setSampleRate(aoCodec->sample_rate);						// ÀýÈç£º44.1 kHz  
-			format.setChannelCount(aoCodec->ch_layout.nb_channels);			// ÀýÈç£ºÁ¢ÌåÉù  
+			format.setSampleRate(aoCodec->sample_rate);						// ä¾‹å¦‚ï¼š44.1 kHz  
+			format.setChannelCount(aoCodec->ch_layout.nb_channels);			// ä¾‹å¦‚ï¼šç«‹ä½“å£°  
 			int nFmt = GetBytesPerSample(aoCodec->sample_fmt);
-			format.setSampleSize(nFmt * 8);									// ÀýÈç£º16Î»Ñù±¾  
-			format.setCodec("audio/pcm");									// ÀýÈç£ºPCM±àÂë  
-			format.setByteOrder(QAudioFormat::LittleEndian);				// ×Ö½ÚÐò  
-			format.setSampleType(QAudioFormat::SignedInt);					// Ñù±¾ÀàÐÍ
+			format.setSampleSize(nFmt * 8);									// ä¾‹å¦‚ï¼š16ä½æ ·æœ¬  
+			format.setCodec("audio/pcm");									// ä¾‹å¦‚ï¼šPCMç¼–ç   
+			format.setByteOrder(QAudioFormat::LittleEndian);				// å­—èŠ‚åº  
+			format.setSampleType(QAudioFormat::SignedInt);					// æ ·æœ¬ç±»åž‹
 
 			m_nBytesPerSample = nFmt * aoCodec->ch_layout.nb_channels;
 			m_dDurionPerSample = 1.0 / aoCodec->sample_rate;
@@ -90,6 +91,7 @@ void AVPlayer::Init()
 		m_Editor.AddSelectedSection(22, 6);
 
 		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
+		m_nFreeBytes = knMaxBufferSize;
 	}
 	catch (const std::exception& e)
 	{
@@ -174,18 +176,18 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
 			}
 
-			SamplesRemainInBuffer(nFree);
+			UpdateTime(nFree);
 
 			//qDebug() << "Free: " << nFree << " Remain: " << nRemain << " Cost: " << nCost << " Wrote: " << m_nSamplesWrote;
 
 			m_Device->write(reinterpret_cast<const char*>(n_Frame->data[0]), n_Frame->linesize[0]);
-			m_nSamplesInBuffer += n_Frame->nb_samples * m_nBytesPerSample;
+			m_nFreeBytes = nFree - n_Frame->nb_samples * m_nBytesPerSample;
 		}
 		else
 		{
 			while (nFree < knMaxBufferSize)
 			{
-				 SamplesRemainInBuffer(nFree);
+				 UpdateTime(nFree);
 
 				nFree = m_AudioOutput->bytesFree();
 				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
@@ -194,13 +196,10 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 	}
 }
 
-void AVPlayer::SamplesRemainInBuffer(int n_nFree)
+void AVPlayer::UpdateTime(int n_nFree)
 {
-	int nBytesRemain = knMaxBufferSize - n_nFree;
-	int nSamplesCost = (m_nSamplesInBuffer - nBytesRemain) / m_nBytesPerSample;
+	int nSamplesCost = (n_nFree - m_nFreeBytes) / m_nBytesPerSample;
 	m_dTime += nSamplesCost * m_dDurionPerSample;
-
-	m_nSamplesInBuffer = nBytesRemain;
 }
 
 void AVPlayer::OnPlayClicked()
