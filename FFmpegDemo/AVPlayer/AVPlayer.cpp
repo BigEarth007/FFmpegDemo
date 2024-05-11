@@ -66,7 +66,7 @@ void AVPlayer::SetPlayView(QLabel* n_View)
 
 void AVPlayer::Load()
 {
-	if (m_sMediaFile.isEmpty() ||
+	if (m_sMediaFile.empty() ||
 		m_Editor.GetStatus() != EEditStatus::ES_Stopped)
 		return;
 	
