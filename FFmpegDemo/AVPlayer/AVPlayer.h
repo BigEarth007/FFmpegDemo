@@ -14,8 +14,8 @@ public:
     ~AVPlayer();
 
 	// Receive video/audio frames that have been decoded
-	int ReceiveData(const aveditorEStreamType n_eStreamType,
-		void* n_Data, aveditorEDataType n_eType, int n_nIndex);
+	int ReceiveData(const aveditor::EStreamType n_eStreamType,
+		void* n_Data, aveditor::EDataType n_eType, int n_nIndex);
 
 	// Set file to play
 	void SetMediaFile(const std::string& n_sMediaFile);
@@ -24,8 +24,8 @@ public:
 	void SetPlayView(QLabel* n_View);
 
 protected:
-	// Load media file
-	void Load();
+	// Load media file, return length of file
+	double Load();
 	// Get video frame
 	virtual void VideoFrameArrived(const AVFrame* n_Frame);
 	// Get audio frame
