@@ -19,6 +19,8 @@ AVPlayer::AVPlayer(QWidget *parent)
 
 	connect(this, &AVPlayer::OnVideoArrived,
 		this, &AVPlayer::slotVideoArrived);
+
+	SetPlayView(ui.label);
 }
 
 AVPlayer::~AVPlayer()
@@ -27,11 +29,49 @@ AVPlayer::~AVPlayer()
 	m_Editor.Join();
 }
 
-void AVPlayer::Init()
+int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataType n_eType, int n_nIndex)
 {
+	// play frame
+	// ...
+	//DebugLog("Output frame %d, Type %d\n", n_eStreamType, n_eType);
+
+	if (n_Data) m_nStreamMark |= (1 << (int)n_eStreamType);
+	else m_nStreamMark &= ~(1 << (int)n_eStreamType);
+
+	switch (n_eStreamType)
+	{
+	case EStreamType::ST_Video:
+		VideoFrameArrived((AVFrame*)n_Data);
+		break;
+	case EStreamType::ST_Audio:
+		AudioFrameArrived((AVFrame*)n_Data);
+		break;
+	}
+
+	AVFreeData(n_eType, n_Data);
+
+	return 0;
+}
+
+void AVPlayer::SetMediaFile(const QString& n_sMediaFile)
+{
+	m_sMediaFile = n_sMediaFile;
+}
+
+void AVPlayer::SetPlayView(QLabel* n_View)
+{
+	m_View = n_View;
+}
+
+void AVPlayer::Load()
+{
+	if (m_sMediaFile.isEmpty() ||
+		m_Editor.GetStatus() == EEditStatus::ES_Stopped)
+		return;
+	
 	try
 	{
-		FFormatContext& Input = m_Editor.OpenInputFile("1.mp4", ETask::T_Normal, kStreamVA);
+		FFormatContext& Input = m_Editor.OpenInputFile(m_sMediaFile, ETask::T_Normal, kStreamVA);
 
 		AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::ST_Video);
 		//AVCodecContext* aCodec = Input.GetCodecContext(EStreamType::EST_Audio);
@@ -92,36 +132,15 @@ void AVPlayer::Init()
 
 		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
 		m_nFreeBytes = knMaxBufferSize;
+		m_dTime = 0;
+
+		if (m_AudioOutput) m_Device = m_AudioOutput->Start();
 	}
 	catch (const std::exception& e)
 	{
 		qDebug() << e.what();
 	}
 
-}
-
-int AVPlayer::ReceiveData(const EStreamType n_eStreamType, void* n_Data, EDataType n_eType, int n_nIndex)
-{
-	// play frame
-	// ...
-	//DebugLog("Output frame %d, Type %d\n", n_eStreamType, n_eType);
-
-	if (n_Data) m_nStreamMark |= (1 << (int)n_eStreamType);
-	else m_nStreamMark &= ~(1 << (int)n_eStreamType);
-
-	switch (n_eStreamType)
-	{
-	case EStreamType::ST_Video:
-		VideoFrameArrived((AVFrame*)n_Data);
-		break;
-	case EStreamType::ST_Audio:
-		AudioFrameArrived((AVFrame*)n_Data);
-		break;
-	}
-
-	AVFreeData(n_eType, n_Data);
-
-	return 0;
 }
 
 void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
@@ -204,15 +223,7 @@ void AVPlayer::UpdateTime(int n_nFree)
 
 void AVPlayer::OnPlayClicked()
 {
-	if (m_Editor.GetStatus() == EEditStatus::ES_Stopped)
-	{
-		Init();
-
-		m_dTime = 0;
-
-		if (m_AudioOutput) m_Device = m_AudioOutput->start();
-	}
-
+	Load();
 	m_Editor.Start();
 }
 
@@ -223,9 +234,9 @@ void AVPlayer::OnStopClicked()
 
 void AVPlayer::slotVideoArrived(const QPixmap n_Pixmap)
 {
-	if (!n_Pixmap.isNull())
+	if (!n_Pixmap.isNull() && m_View)
 	{
-		QPixmap Pixmap = n_Pixmap.scaled(ui.label->size());
-		ui.label->setPixmap(Pixmap);
+		QPixmap Pixmap = n_Pixmap.scaled(m_View->size());
+		m_View->setPixmap(Pixmap);
 	}
 }
