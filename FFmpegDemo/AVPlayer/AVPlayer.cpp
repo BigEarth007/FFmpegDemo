@@ -64,11 +64,12 @@ void AVPlayer::SetPlayView(QLabel* n_View)
 	m_View = n_View;
 }
 
-void AVPlayer::Load()
+double AVPlayer::Load()
 {
-	if (m_sMediaFile.empty() ||
-		m_Editor.GetStatus() != EEditStatus::ES_Stopped)
-		return;
+	double dLength = 0.0;
+	
+	if (m_Editor.GetStatus() != EEditStatus::ES_Stopped)
+		return dLength;
 	
 	try
 	{
@@ -133,6 +134,7 @@ void AVPlayer::Load()
 		//m_Editor.AddSelectedSection(22, 6);
 
 		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
+		dLength = m_Editor.GetInputContext()->Length();
 		m_nFreeBytes = knMaxBufferSize;
 		m_dTime = 0;
 
@@ -143,6 +145,7 @@ void AVPlayer::Load()
 		qDebug() << e.what();
 	}
 
+	return dLength;
 }
 
 void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
@@ -223,8 +226,11 @@ void AVPlayer::UpdateTime(int n_nFree)
 
 void AVPlayer::OnPlayClicked()
 {
-	Load();
-	m_Editor.Start();
+	if (!m_sMediaFile.empty())
+	{
+		Load();
+		m_Editor.Start();
+	}
 }
 
 void AVPlayer::OnStopClicked()
