@@ -162,7 +162,6 @@ static void Play()
 		FFormatContext& Output = Editor.GetOutputContext()->GetContext();
 		Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_VIDEO));
 		Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_AUDIO));
-		// could not use this function, as the frame_size is 0
 		//Output.BuildCodecContext(aCodec->codec_id, aCodec);
 
 		AVCodecContext* ovCodec = Output.GetCodecContext(EStreamType::ST_Video);
