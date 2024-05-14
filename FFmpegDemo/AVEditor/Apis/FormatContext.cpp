@@ -351,6 +351,8 @@ namespace aveditor
 				ctx->sample_fmt = GetSupportedSampleFormat(Codec, n_InputCodecContext->sample_fmt);
 				GetSupportedChannelLayout(Codec, &ctx->ch_layout);
 				ctx->time_base = { 1, ctx->sample_rate };
+				// For empty m_Context, copy the frame_size
+				if (!m_Context) ctx->frame_size = n_InputCodecContext->frame_size;
 			}
 			else if (Codec->type == AVMediaType::AVMEDIA_TYPE_VIDEO)
 			{
