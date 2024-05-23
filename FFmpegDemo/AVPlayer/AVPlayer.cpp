@@ -68,82 +68,71 @@ double AVPlayer::Load()
 {
 	double dLength = 0.0;
 	
-	if (m_Editor.GetStatus() != EEditStatus::ES_Stopped)
-		return dLength;
-	
-	try
+	FFormatContext& Input = m_Editor.OpenInputFile(m_sMediaFile, ETask::T_Normal, kStreamVA);
+
+	AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::ST_Video);
+	//AVCodecContext* aCodec = Input.GetCodecContext(EStreamType::EST_Audio);
+
+	// Maybe AVFrame decoded from input context should be convert to target 
+	// sample format/pixel format, so the target codec context should be created
+	FFormatContext& Output = m_Editor.GetOutputContext()->GetContext();
+	Output.BuildEncodeCodecContext(AVCodecID::AV_CODEC_ID_RAWVIDEO, vCodec);
+	//Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_VIDEO));
+
+	Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_AUDIO));
+	// could not use this function, as the frame_size is 0
+	//Output.BuildCodecContext(aCodec->codec_id, aCodec);
+
+	AVCodecContext* ovCodec = Output.GetCodecContext(EStreamType::ST_Video);
+	ovCodec->pix_fmt = GetSupportedPixelFormat(ovCodec->codec, 
+		AVPixelFormat::AV_PIX_FMT_RGB24);
+
+	AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
+	if (aoCodec) aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
+
+	if (m_AudioOutput == nullptr && aoCodec)
 	{
-		FFormatContext& Input = m_Editor.OpenInputFile(m_sMediaFile, ETask::T_Normal, kStreamVA);
+		QAudioFormat format;
+		format.setSampleRate(aoCodec->sample_rate);						// 例如：44.1 kHz  
+		format.setChannelCount(aoCodec->ch_layout.nb_channels);			// 例如：立体声  
+		int nFmt = GetBytesPerSample(aoCodec->sample_fmt);
+		format.setSampleSize(nFmt * 8);									// 例如：16位样本  
+		format.setCodec("audio/pcm");									// 例如：PCM编码  
+		format.setByteOrder(QAudioFormat::LittleEndian);				// 字节序  
+		format.setSampleType(QAudioFormat::SignedInt);					// 样本类型
+		m_nBytesPerSample = nFmt * aoCodec->ch_layout.nb_channels;
+		m_dDurionPerSample = 1.0 / aoCodec->sample_rate;
 
-		AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::ST_Video);
-		//AVCodecContext* aCodec = Input.GetCodecContext(EStreamType::EST_Audio);
+		QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
 
-		// Maybe AVFrame decoded from input context should be convert to target 
-		// sample format/pixel format, so the target codec context should be created
-		FFormatContext& Output = m_Editor.GetOutputContext()->GetContext();
-		Output.BuildEncodeCodecContext(AVCodecID::AV_CODEC_ID_RAWVIDEO, vCodec);
-		//Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_VIDEO));
-
-		Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_AUDIO));
-		// could not use this function, as the frame_size is 0
-		//Output.BuildCodecContext(aCodec->codec_id, aCodec);
-
-		AVCodecContext* ovCodec = Output.GetCodecContext(EStreamType::ST_Video);
-		ovCodec->pix_fmt = GetSupportedPixelFormat(ovCodec->codec, 
-			AVPixelFormat::AV_PIX_FMT_RGB24);
-
-		AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
-		if (aoCodec) aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
-
-		if (m_AudioOutput == nullptr && aoCodec)
-		{
-			QAudioFormat format;
-			format.setSampleRate(aoCodec->sample_rate);						// 例如：44.1 kHz  
-			format.setChannelCount(aoCodec->ch_layout.nb_channels);			// 例如：立体声  
-			int nFmt = GetBytesPerSample(aoCodec->sample_fmt);
-			format.setSampleSize(nFmt * 8);									// 例如：16位样本  
-			format.setCodec("audio/pcm");									// 例如：PCM编码  
-			format.setByteOrder(QAudioFormat::LittleEndian);				// 字节序  
-			format.setSampleType(QAudioFormat::SignedInt);					// 样本类型
-
-			m_nBytesPerSample = nFmt * aoCodec->ch_layout.nb_channels;
-			m_dDurionPerSample = 1.0 / aoCodec->sample_rate;
-
-			QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-
-			m_AudioOutput = new QAudioOutput(info, format, this);
-			m_AudioOutput->setBufferSize(knMaxBufferSize);
-		}
-
-		m_Editor.SetFinishedCallback(
-			[this]() {
-
-				if (m_Device) m_Device->close();
-				if (m_AudioOutput)
-				{
-					m_AudioOutput->stop();
-					//m_AudioOutput->deleteLater();
-				}
-			});
-
-		m_Editor.SetOutputIOHandle(this);
-		m_Editor.SetMaxBufferSize(0);
-
-		// for section select
-		//m_Editor.AddSelectedSection(5, 10);
-		//m_Editor.AddSelectedSection(22, 6);
-
-		m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
-		dLength = m_Editor.GetInputContext()->Length();
-		m_nFreeBytes = knMaxBufferSize;
-		m_dTime = 0;
-
-		if (m_AudioOutput) m_Device = m_AudioOutput->Start();
+		m_AudioOutput = new QAudioOutput(info, format, this);
+		m_AudioOutput->setBufferSize(knMaxBufferSize);
 	}
-	catch (const std::exception& e)
-	{
-		qDebug() << e.what();
-	}
+
+	m_Editor.SetFinishedCallback(
+		[this]() {
+
+			if (m_Device) m_Device->close();
+			if (m_AudioOutput)
+			{
+				m_AudioOutput->stop();
+				//m_AudioOutput->deleteLater();
+			}
+		});
+
+	m_Editor.SetOutputIOHandle(this);
+	m_Editor.SetMaxBufferSize(0);
+
+	// for section select
+	//m_Editor.AddSelectedSection(5, 10);
+	//m_Editor.AddSelectedSection(22, 6);
+
+	m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
+	dLength = m_Editor.GetInputContext()->Length();
+	m_nFreeBytes = knMaxBufferSize;
+	m_dTime = 0;
+
+	if (m_AudioOutput) m_Device = m_AudioOutput->Start();
 
 	return dLength;
 }
@@ -226,10 +215,18 @@ void AVPlayer::UpdateTime(int n_nFree)
 
 void AVPlayer::OnPlayClicked()
 {
-	if (!m_sMediaFile.empty())
+	if (m_sMediaFile.empty()) return;
+
+	try
 	{
-		Load();
+		if (m_Editor.GetStatus() == EEditStatus::ES_Stopped)
+			Load();
+
 		m_Editor.Start();
+	}
+	catch (const std::exception& e)
+	{
+		qDebug() << e.what();
 	}
 }
 
