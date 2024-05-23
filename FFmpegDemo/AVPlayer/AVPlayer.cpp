@@ -64,10 +64,8 @@ void AVPlayer::SetPlayView(QLabel* n_View)
 	m_View = n_View;
 }
 
-double AVPlayer::Load()
+void AVPlayer::Load()
 {
-	double dLength = 0.0;
-	
 	FFormatContext& Input = m_Editor.OpenInputFile(m_sMediaFile, ETask::T_Normal, kStreamVA);
 
 	AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::ST_Video);
@@ -128,13 +126,10 @@ double AVPlayer::Load()
 	//m_Editor.AddSelectedSection(22, 6);
 
 	m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
-	dLength = m_Editor.GetInputContext()->Length();
 	m_nFreeBytes = knMaxBufferSize;
 	m_dTime = 0;
 
-	if (m_AudioOutput) m_Device = m_AudioOutput->Start();
-
-	return dLength;
+	if (m_AudioOutput) m_Device = m_AudioOutput->start();
 }
 
 void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
@@ -223,6 +218,8 @@ void AVPlayer::OnPlayClicked()
 			Load();
 
 		m_Editor.Start();
+		
+		//double dLength = m_Editor.GetInputContext()->Length();
 	}
 	catch (const std::exception& e)
 	{
