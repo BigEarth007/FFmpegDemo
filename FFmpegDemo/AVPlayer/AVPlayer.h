@@ -25,7 +25,7 @@ public:
 
 protected:
 	// Load media file, return length of file
-	double Load();
+	void Load();
 	// Get video frame
 	virtual void VideoFrameArrived(const AVFrame* n_Frame);
 	// Get audio frame
