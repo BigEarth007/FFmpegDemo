@@ -329,14 +329,14 @@ namespace aveditor
 			m_eStatus = EEditStatus::ES_Stopping;
 
 			m_AVObject.Release();
-			Release();
-
-			m_eStatus = EEditStatus::ES_Stopped;
 		}
 		catch (const std::exception& e)
 		{
 			AVDebug(e.what());
 		}
+
+		Release();
+		m_eStatus = EEditStatus::ES_Stopped;
 
 		Thread::Run();
 	}
