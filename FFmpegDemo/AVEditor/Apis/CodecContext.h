@@ -81,6 +81,13 @@ namespace aveditor
 		// Video: Get number of planes by pixel format
 		AVEDITOR_API int GetPixFmtPlaneCount(AVPixelFormat n_ePixelFormat);
 
+		// Video: Get return a pixel format descriptor for provided pixel format or NULL if 
+		// this pixel format is unknown
+		AVEDITOR_API const AVPixFmtDescriptor* GetPixFmtDesc(AVPixelFormat n_ePixelFormat);
+
+		// Video: Get the number of bits per pixel used by the pixel format described by pixdesc
+		AVEDITOR_API int GetBitsPerPixel(const AVPixFmtDescriptor* n_PixDesc);
+
 		// Audio: Check if the sample format is planar.
 		AVEDITOR_API int IsSampleFmtPlanar(AVSampleFormat n_eSampleFormat);
 

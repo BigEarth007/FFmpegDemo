@@ -47,6 +47,10 @@ namespace aveditor
 			{
 				int nPlanes = GetPixFmtPlaneCount(vCodec->pix_fmt);
 				m_CtxHandle->SetVideoPlanes(nPlanes);
+
+				auto desc = GetPixFmtDesc(vCodec->pix_fmt);
+				int nBitsPerPixel = GetBitsPerPixel(desc);
+				m_CtxHandle->SetBytesPerPixel(nBitsPerPixel / 8);
 			}
 
 			auto aCodec = m_Context.GetCodecContext(EStreamType::ST_Audio);

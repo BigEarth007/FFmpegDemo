@@ -17,6 +17,9 @@ namespace aveditor
 		void SetVideoPlanes(const int n_nPlanes);
 		const int GetVideoPlanes() const;
 
+		void SetBytesPerPixel(const int n_nBytes);
+		const int GetBytesPerPixel() const;
+
 		void SetAudioPlanar(const int n_nPlanar);
 		const int GetAudioPlanar() const;
 
@@ -36,6 +39,7 @@ namespace aveditor
 
 		// For video frame
 		int m_nPlanes = 0;
+		int m_nBytesPerPixel = 0;
 
 		// For audio frame
 		int m_nIsPlanar = 0;

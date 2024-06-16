@@ -364,6 +364,16 @@ namespace aveditor
 		return av_pix_fmt_count_planes(n_ePixelFormat);
 	}
 
+	AVEDITOR_API const AVPixFmtDescriptor* GetPixFmtDesc(AVPixelFormat n_ePixelFormat)
+	{
+		return av_pix_fmt_desc_get(n_ePixelFormat);
+	}
+
+	AVEDITOR_API int GetBitsPerPixel(const AVPixFmtDescriptor* n_PixDesc)
+	{
+		return av_get_bits_per_pixel(n_PixDesc);
+	}
+
 	AVEDITOR_API int IsSampleFmtPlanar(AVSampleFormat n_eSampleFormat)
 	{
 		return av_sample_fmt_is_planar(n_eSampleFormat);

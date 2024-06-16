@@ -10,7 +10,22 @@ namespace aveditor
 		int nPlanes = GetVideoPlanes();
 
 		if (1 == nPlanes)
-			memcpy_s(n_Frame->data[0], n_nSize, n_Data, n_nSize);
+		{
+			int nLineBytes = n_Frame->width * m_nBytesPerPixel;
+			if (nLineBytes < n_Frame->linesize[0])
+			{
+				for (int i = 0; i < n_Frame->height; i++)
+				{
+					memcpy_s(
+						n_Frame->data[0] + i * n_Frame->linesize[0],
+						n_Frame->linesize[0],
+						(unsigned char*)n_Data + i * nLineBytes,
+						nLineBytes);
+				}
+			}
+			else
+				memcpy_s(n_Frame->data[0], n_nSize, n_Data, n_nSize);
+		}
 	}
 
 	void IContextHandle::FillAudioFrame(AVFrame* n_Frame,
@@ -34,6 +49,16 @@ namespace aveditor
 	const int IContextHandle::GetVideoPlanes() const
 	{
 		return m_nPlanes;
+	}
+
+	void IContextHandle::SetBytesPerPixel(const int n_nBytes)
+	{
+		m_nBytesPerPixel = n_nBytes;
+	}
+
+	const int IContextHandle::GetBytesPerPixel() const
+	{
+		return m_nBytesPerPixel;
 	}
 
 	void IContextHandle::SetAudioPlanar(const int n_nPlanar)
