@@ -1,6 +1,7 @@
 #pragma once
 #include <thread>
 #include <atomic>
+#include <mutex>
 
 
 namespace aveditor 
@@ -47,7 +48,8 @@ namespace aveditor
 
 	protected:
 		std::atomic_bool	m_bStop = true;
-		std::thread			m_pThread;
+		std::thread		m_pThread;
+		std::mutex		m_mutex;
 
 		std::function<void()> m_funcStartup = nullptr;
 		std::function<void()> m_funcFinished = nullptr;
