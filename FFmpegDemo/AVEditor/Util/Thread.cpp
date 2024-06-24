@@ -29,6 +29,7 @@ namespace aveditor
 
 	void Thread::Join()
 	{
+		std::unique_lock<std::mutex> Lock(m_mutex);
 		if (m_pThread.joinable())
 			m_pThread.join();
 	}
