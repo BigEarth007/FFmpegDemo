@@ -92,6 +92,8 @@ namespace aveditor
 	protected:
 		// Addition setting for codec context
 		void CodecContextAddition(AVCodecContext* n_CodecContext);
+
+		bool m_bWriteHeader = false;
 	};
 
 
