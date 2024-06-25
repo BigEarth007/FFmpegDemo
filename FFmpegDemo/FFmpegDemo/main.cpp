@@ -138,7 +138,7 @@ public:
 		if (!n_Data) return 0;
 		// display frame
 		// ...
-		DebugLog("Output frame %d, Type %d\n", n_eStreamType, n_eType);
+		AVDebug("Output frame %d, Type %d\n", n_eStreamType, n_eType);
 		AVFreeData(n_eType, n_Data);
 
 		return 0;
