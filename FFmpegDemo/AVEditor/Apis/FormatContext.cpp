@@ -203,6 +203,8 @@ namespace aveditor
 
 		int ret = avio_open(&m_Context->pb, m_Context->url, AVIO_FLAG_WRITE);
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to open file.");
+
+		m_bWriteHeader = false;
 	}
 
 	void FFormatContext::WriteHeader()
@@ -230,6 +232,8 @@ namespace aveditor
 
 		int ret = avformat_write_header(m_Context, nullptr);
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to write header into output file.");
+
+		m_bWriteHeader = true;
 	}
 
 	int FFormatContext::InterleavedWritePacket(AVPacket* n_Packet)
@@ -261,6 +265,7 @@ namespace aveditor
 
 	void FFormatContext::WriteTrailer()
 	{
+		if (!m_bWriteHeader) return;
 		int ret = av_write_trailer(m_Context);
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to write trailer into output file.");
 	}
@@ -359,8 +364,9 @@ namespace aveditor
 				ctx->bit_rate = n_InputCodecContext->bit_rate;
 				ctx->width = n_InputCodecContext->width;
 				ctx->height = n_InputCodecContext->height;
-				ctx->time_base = n_InputCodecContext->time_base;
-				ctx->framerate = av_inv_q(ctx->time_base);
+				ctx->framerate = GetSupportedFrameRate(Codec,
+					av_inv_q(n_InputCodecContext->time_base));
+				ctx->time_base = av_inv_q(ctx->framerate);
 				ctx->pix_fmt = GetSupportedPixelFormat(Codec, n_InputCodecContext->pix_fmt);
 			}
 		}
@@ -619,7 +625,7 @@ namespace aveditor
 		double dCurrent = av_q2d(Rational);
 		double dDiff = abs(dCurrent - dBase);
 
-		while (p)
+		while (p && p->num > 0 && p->den > 0)
 		{
 			if (p->num)
 			{
