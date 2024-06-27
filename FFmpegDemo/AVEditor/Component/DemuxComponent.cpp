@@ -14,18 +14,54 @@ namespace aveditor
 		Release();
 	}
 
-	void CDemuxComponent::Init(int n_nContextIndex)
+	void CDemuxComponent::Init(int n_nContextIndex,
+		const std::map<EStreamType, int64_t>& n_mPts)
 	{
 		IComponent::Init(n_nContextIndex);
 
 		m_nContextIndex = n_nContextIndex;
-		m_OutputCodecContext = m_OutputContext->GetCodecContext();
+		auto mOutputCodecContext = m_OutputContext->GetCodecContext();
 
 		CInputContext* InputContext = GetInputContext();
 		for (int i = 0; i < (int)EStreamType::ST_Size; i++)
 		{
+			EStreamType Type = EStreamType(i);
+
 			if (InputContext->GetStreamIndex((EStreamType)i) != -1)
+			{
+				// Set timebase of the stream
+				auto itr1 = mOutputCodecContext->find(Type);
+				if (itr1 != mOutputCodecContext->end())
+				{
+					m_mStreamInfo[Type].TimeBase = itr1->second.m_Context->time_base;
+				}
+				else
+				{
+					auto MediaType = StreamType2MediaType(Type);
+					auto Stream = InputContext->GetContext().FindStream(MediaType);
+					if (Stream) m_mStreamInfo[Type].TimeBase = Stream->time_base;
+				}
+
+				// Set pts of last input context
+				auto itr2 = n_mPts.find(Type);
+				if (itr2 != n_mPts.end())
+					m_mStreamInfo[Type].LastMax = itr2->second;
+
 				SetStreamEndFlag((EStreamType)i, 0);
+
+				// Convert the selected sections from timestamps to pts;
+				if (m_mStreamInfo[Type].TimeBase.den == 1) continue;
+				auto rational = av_q2d(m_mStreamInfo[Type].TimeBase);
+
+				auto& vSections = InputContext->GetSelectedSections();
+				for (size_t j = 0; j < vSections.size(); j++)
+				{
+					int64_t pts = (int64_t)(vSections[j].dFrom / rational);
+					m_mStreamInfo[Type].Sections.push_back(pts);
+					pts = (int64_t)(vSections[j].dTo / rational);
+					m_mStreamInfo[Type].Sections.push_back(pts);
+				}
+			}
 		}
 	}
 
@@ -39,7 +75,7 @@ namespace aveditor
 		if (!InputContext->IsValid()) return AVERROR_EOF;
 
 		int				ret = 0;
-		int64_t			nPts = 0;
+		int64_t			nDiscardDuration = 0;
 		AVStream*		Stream = nullptr;
 		AVPacket*		Packet = av_packet_alloc();
 		EStreamType		eStreamType = EStreamType::ST_Size;
@@ -50,6 +86,7 @@ namespace aveditor
 			if (ret < 0)
 			{
 				WriteEndData();
+				AVDebug("-----------------------------------------------------\n\n");
 				break;
 			}
 
@@ -74,31 +111,38 @@ namespace aveditor
 				break;
 			}
 
-			// Check weather this packet is during the section
-			nPts = InputContext->IsPacketInSelectedSection(
-				Packet, Stream->time_base);
-			if (nPts == AVERROR_EOF)
+			auto itr = m_mStreamInfo.find(eStreamType);
+			if (itr == m_mStreamInfo.end()) break;
+
+			Packet->pts = Packet->dts;
+
+			if (itr->second.TimeBase.den > 1)
+			{
+				av_packet_rescale_ts(Packet, Stream->time_base,
+					itr->second.TimeBase);
+			}
+
+			nDiscardDuration = itr->second.IsPacketUseable(
+				Packet->pts, Packet->duration);
+			if (nDiscardDuration == -1) break;
+			else if (nDiscardDuration == AVERROR_EOF)
 			{
 				WriteData(eStreamType, nullptr,
 					EDataType::DT_Packet, InputContext->GetSubnumber());
 				SetStreamEndFlag(eStreamType, 1);
 				break;
 			}
-			else if (nPts == -2)
-			{
-				// not in selected section
-				break;
-			}
 
-			auto itr = m_OutputCodecContext->find(eStreamType);
-			if (itr != m_OutputCodecContext->end())
-			{
-				av_packet_rescale_ts(Packet, Stream->time_base,
-					itr->second.m_Context->time_base);
-			}
+			Packet->pts += itr->second.LastMax - nDiscardDuration;
+			Packet->dts = Packet->pts;
+			Packet->pos = -1;
+
+			if (itr->second.CurMax < Packet->pts + Packet->duration)
+				itr->second.CurMax = Packet->pts + Packet->duration;
 
 			//LogInfo("Current size: %zd, Stream index: %d.\n", 
 			//			m_Cache->Size(nKey), Packet->stream_index);
+			//AVDebug("StreamIndex: %d; pts: %zd => dts: %zd======\n", Packet->stream_index, Packet->pts, Packet->dts);
 
 			WriteData(eStreamType, Packet,
 				EDataType::DT_Packet, InputContext->GetSubnumber());
@@ -131,6 +175,18 @@ namespace aveditor
 		return m_Editor->GetInputContext(m_nContextIndex);
 	}
 
+	const std::map<aveditor::EStreamType, int64_t> CDemuxComponent::GetPts() const
+	{
+		std::map<aveditor::EStreamType, int64_t> m;
+
+		for (auto itr = m_mStreamInfo.begin(); itr != m_mStreamInfo.end(); itr++)
+		{
+			m[itr->first] = itr->second.CurMax;
+		}
+
+		return m;
+	}
+
 	void CDemuxComponent::WriteEndData()
 	{
 		CInputContext* InputContext = GetInputContext();
@@ -148,6 +204,41 @@ namespace aveditor
 				SetStreamEndFlag((EStreamType)i, 1);
 			}
 		}
+	}
+
+	int64_t CDemuxComponent::FStreamInfo::IsPacketUseable(const int64_t n_nPts, const int64_t n_nDuration)
+	{
+		bool selected = true;
+
+		size_t i = 0;
+		int64_t start = 0;
+		int64_t nDiscardDuration = 0;
+
+		// There is no selected section
+		if (Sections.size() == 0) return nDiscardDuration;
+
+		for (i = 0; i < Sections.size(); i+=2)
+		{
+			if (n_nPts < Sections[i])
+			{
+				if (n_nPts + n_nDuration > Sections[i])
+					Sections[i] = n_nPts + n_nDuration;
+				selected = false;
+				break;
+			}
+
+			if (i > 0) start = Sections[i - 1];
+			nDiscardDuration += Sections[i] - start;
+
+			if (n_nPts < Sections[i + 1]) break;
+		}
+
+		// It is end of selected section
+		if (i >= Sections.size()) return AVERROR_EOF;
+		// Not in selected sections
+		if (!selected) return -1;
+		// In the selected sections, adjust pts
+		return nDiscardDuration;
 	}
 
 }

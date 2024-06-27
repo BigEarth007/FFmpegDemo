@@ -38,12 +38,14 @@ namespace aveditor
 		// Set Audio/Video IO handle for output 
 		void SetOutputIOHandle(IAVIOHandle* n_Handle);
 
+		FAudioFifo* GetAudioFofo();
+
+		void SetAudioPts(const int64_t n_nPts);
+		const int64_t GetAudioPts() const;
+
 	protected:
 		// Reset input and audio mix components, so it can read next batch contexts
 		void ResetComponents();
-
-		// Calculate duration of last batch
-		double CalcLength();
 
 	protected:
 		CEditor*						m_Editor = nullptr;
@@ -52,6 +54,11 @@ namespace aveditor
 		std::vector<CDecodeComponent*>	m_vDecodeComp;
 
 		CAudioMixComponent				m_AudioMixComp;
+
+		// Audio Fifo Buffer
+		FAudioFifo						m_AudioFifo;
+		// Audio pts, for audio converting
+		int64_t							m_nAudioPts = 0;
 
 		CEncodeComponent				m_EncodeComp;
 		CMuxerComponent					m_MuxerComp;

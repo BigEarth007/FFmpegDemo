@@ -49,9 +49,6 @@ namespace aveditor
 		if (nSize > m_nSamples)
 			nSize = m_nSamples;
 
-		ThrowExceptionExpr(nSize == 0,
-			"The number of samples of the output frame could not be 0.\n");
-
 		return nSize;
 	}
 

@@ -10,7 +10,8 @@ namespace aveditor
 		~CAVConverter();
 
 		void Init(FCodecContext* n_InputCodec,
-			FCodecContext* n_OutputCodec);
+			FCodecContext* n_OutputCodec,
+			CEditor* n_Editor);
 		void Release();
 
 		int Coverting(const EDataType n_eDataType, void* n_Data);
@@ -42,6 +43,8 @@ namespace aveditor
 		// Set finished callback
 		void SetFinishedCallback(CompCallback n_Callback);
 
+		const int64_t GetFramePts() const;
+
 	protected:
 		// Compare codec between input and output context
 		int CompCodecFormat();
@@ -50,6 +53,7 @@ namespace aveditor
 		virtual int FinishedConvert(AVFrame* n_Frame);
 
 	protected:
+		CEditor*		m_Editor = nullptr;
 		// Notify callback after decoding and converting
 		CompCallback	m_Callback = nullptr;
 

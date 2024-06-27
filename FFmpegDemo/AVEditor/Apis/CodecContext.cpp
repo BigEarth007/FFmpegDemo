@@ -205,6 +205,8 @@ namespace aveditor
 				if (num - (int)num > 0) num += 0.5f;
 				m_Context->framerate = { (int)num, 1 };
 			}
+
+			m_Context->time_base = av_inv_q(m_Context->framerate);
 		}
 		else if (n_Stream->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
 		{

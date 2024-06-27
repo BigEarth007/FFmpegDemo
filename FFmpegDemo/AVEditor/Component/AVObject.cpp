@@ -30,6 +30,9 @@ namespace aveditor
 	void CAVObject::Release()
 	{
 		ResetComponents();
+
+		m_AudioFifo.Release();
+		m_nAudioPts = 0;
 	}
 
 	int CAVObject::RunDemux()
@@ -85,9 +88,19 @@ namespace aveditor
 
 	void CAVObject::StartBatch(int n_nBatchIndex)
 	{
-		ResetComponents();
+		std::map<EStreamType, int64_t> mPts;
 
-		if (n_nBatchIndex == 0) m_MuxerComp.SetDuration(0);
+		for (size_t i = 0; i < m_vDemuxComp.size(); i++)
+		{
+			auto m = m_vDemuxComp[i]->GetPts();
+			for (auto itr = m.begin(); itr != m.end(); itr++)
+			{
+				if (itr->second > mPts[itr->first])
+					mPts[itr->first] = itr->second;
+			}
+		}
+
+		ResetComponents();
 
 		auto vInputs = m_Editor->GetInputContextsByBatch(n_nBatchIndex);
 
@@ -95,7 +108,7 @@ namespace aveditor
 		{
 			CDemuxComponent* InputComp = new CDemuxComponent();
 			InputComp->SetEditor(m_Editor);
-			InputComp->Init(vInputs[i]);
+			InputComp->Init(vInputs[i], mPts);
 			InputComp->SetMaxBufferSize(m_nMaxBufferSize);
 			m_vDemuxComp.emplace_back(InputComp);
 
@@ -157,41 +170,27 @@ namespace aveditor
 		m_MuxerComp.SetIOHandle(n_Handle);
 	}
 
+	FAudioFifo* CAVObject::GetAudioFofo()
+	{
+		return &m_AudioFifo;
+	}
+
+	void CAVObject::SetAudioPts(const int64_t n_nPts)
+	{
+		if (n_nPts > m_nAudioPts) m_nAudioPts = n_nPts;
+	}
+
+	const int64_t CAVObject::GetAudioPts() const
+	{
+		return m_nAudioPts;
+	}
+
 	void CAVObject::ResetComponents()
 	{
-		double dDuration = CalcLength();
-		// Set current duration for media appending
-		m_MuxerComp.AddDuration(dDuration);
-
 		ReleaseVector(m_vDemuxComp);
 		ReleaseVector(m_vDecodeComp);
 		m_AudioMixComp.Release();
 		m_EncodeComp.Release();
 		m_MuxerComp.Release();
 	}
-
-	double CAVObject::CalcLength()
-	{
-		double dLength = 0;
-
-		for (size_t i = 0; i < m_vDemuxComp.size(); i++)
-		{
-			CInputContext* Input = m_vDemuxComp[i]->GetInputContext();
-			if (Input->GetTask() == ETask::T_Normal)
-				dLength = Input->Length();
-			else
-			{
-				if (Input->GetStreamIndex(EStreamType::ST_Video) > -1)
-					dLength = Input->Length();
-				else
-				{
-					if (Input->Length() > dLength)
-						dLength = Input->Length();
-				}
-			}
-		}
-
-		return dLength;
-	}
-
 }

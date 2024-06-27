@@ -87,6 +87,13 @@ namespace aveditor
 	{
 		int ret = 0;
 
+		if (n_Frame == nullptr &&
+			m_Editor->GetCurrentBatchIndex() < m_Editor->GetMaxBatchIndex())
+		{
+			WriteData(n_eStreamType, nullptr, EDataType::DT_Packet, 0);
+			return AVERROR_EOF;
+		}
+
 		auto itr = m_OutputCodecContext->find(n_eStreamType);
 		if (itr != m_OutputCodecContext->end())
 		{
@@ -96,8 +103,7 @@ namespace aveditor
 					//LogInfo("StreamIndex: %d; Pts: %lld, Dts: %lld, Duration: %lld\n",
 					//	n_Packet->stream_index, n_Packet->pts, n_Packet->dts, n_Packet->duration);
 
-					if (n_Packet->pts < n_Packet->dts)
-						n_Packet->pts = n_Packet->dts;
+					n_Packet->pts = n_Packet->dts;
 
 					WriteData(n_eStreamType, n_Packet, EDataType::DT_Packet, 0);
 

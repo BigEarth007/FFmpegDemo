@@ -28,7 +28,7 @@ namespace aveditor
 		for (auto itr = OutputCodecContext->begin();
 			itr != OutputCodecContext->end(); itr++)
 		{
-			m_TimeSync[(int)itr->first].dTimestamp = -AV_NOPTS_VALUE;
+			m_TimeSync[(int)itr->first].dTimestamp = AVERROR_EOF;
 			m_TimeSync[(int)itr->first].dTimebase =
 				av_q2d(itr->second.m_Context->time_base);
 
@@ -36,6 +36,7 @@ namespace aveditor
 			AVMediaType eMediaType = StreamType2MediaType(itr->first);
 			AVStream* Stream = m_OutputContext->FindStream(eMediaType);
 			if (Stream) m_TimeSync[(int)itr->first].nStreamIndex = Stream->index;
+			else m_TimeSync[(int)itr->first].nStreamIndex = int(itr->first);
 
 			SetStreamEndFlag(itr->first, 0);
 		}
@@ -66,8 +67,7 @@ namespace aveditor
 			for (auto itr = OutputCodecContext->begin();
 				itr != OutputCodecContext->end(); itr++)
 			{
-				m_TimeSync[(int)itr->first].dTimestamp = -AV_NOPTS_VALUE;
-				m_TimeSync[(int)itr->first].nHold = 0;
+				m_TimeSync[(int)itr->first].dTimestamp = AVERROR_EOF;
 				SetStreamEndFlag(itr->first, 0);
 			}
 		}
@@ -96,18 +96,6 @@ namespace aveditor
 		return ret;
 	}
 
-	void CMuxerComponent::AddDuration(const double n_dDuration)
-	{
-		m_dDuration += n_dDuration;
-		Duration2Pts();
-	}
-
-	void CMuxerComponent::SetDuration(const double n_dDuration)
-	{
-		m_dDuration = 0;
-		Duration2Pts();
-	}
-
 	AVPacket* CMuxerComponent::ReadCache()
 	{
 		AVPacket* Packet = nullptr;
@@ -127,7 +115,7 @@ namespace aveditor
 			// Pass end stream
 			if (GetStreamEndFlag((EStreamType)i) != 0) continue;
 
-			if (m_TimeSync[i].nHold == 0)
+			if (m_TimeSync[i].dTimestamp == AVERROR_EOF)
 			{
 				// Get first AVPacket
 				ret = Front((EStreamType)i, eDataType, pData);
@@ -155,7 +143,6 @@ namespace aveditor
 				}
 
 				m_TimeSync[i].dTimestamp = dTimestamp;
-				m_TimeSync[i].nHold = 1;
 			}
 
 			if (nMinIndex == AVERROR_EOF ||
@@ -171,24 +158,13 @@ namespace aveditor
 		Pop((EStreamType)nMinIndex, eDataType, pData, kSleepDelay);
 		Packet = (AVPacket*)pData;
 
-		if (Packet->pts < 0) AddDuration(-m_TimeSync[nMinIndex].dTimestamp);
-
 		Packet->stream_index = m_TimeSync[nMinIndex].nStreamIndex;
-		Packet->pts += m_TimeSync[nMinIndex].nPts;
-		Packet->dts += m_TimeSync[nMinIndex].nPts;
+		//AVDebug("======StreamIndex: %d; pts: %zd => dts: %zd\n", Packet->stream_index, Packet->pts, Packet->dts);
+		Packet->dts = Packet->pts;
 
-		m_TimeSync[nMinIndex].nHold = 0;
+		m_TimeSync[nMinIndex].dTimestamp = AVERROR_EOF;
 
 		return Packet;
-	}
-
-	void CMuxerComponent::Duration2Pts()
-	{
-		for (int i = 0; i < (int)EStreamType::ST_Size; i++)
-		{
-			if (m_TimeSync[i].dTimebase != 0)
-				m_TimeSync[i].nPts = (int64_t)(m_dDuration / m_TimeSync[i].dTimebase);
-		}
 	}
 
 }

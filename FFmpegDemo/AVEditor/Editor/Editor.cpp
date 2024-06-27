@@ -57,7 +57,7 @@ namespace aveditor
 		InputContext->MarkStream(n_nStreams);
 
 		// Batch index
-		int nBatchIndex = GetMaxBatch();
+		int nBatchIndex = GetMaxBatchIndex();
 		switch (n_eTask)
 		{
 		case ETask::T_Normal:
@@ -167,9 +167,11 @@ namespace aveditor
 		m_AVObject.SetMaxBufferSize(n_nSize);
 	}
 
-	const int CEditor::GetMaxBatch() const
+	const int CEditor::GetMaxBatchIndex() const
 	{
 		int nResult = -1;
+
+		if (m_nMaxBatchIndex > -1) return m_nMaxBatchIndex;
 
 		for (size_t i = 0; i < m_vInputContext.size(); i++)
 		{
@@ -178,6 +180,11 @@ namespace aveditor
 		}
 
 		return nResult;
+	}
+
+	const int CEditor::GetCurrentBatchIndex() const
+	{
+		return m_nCurBatchIndex;
 	}
 
 	const int CEditor::GetMaxAudioMixBatch(int& n_nCount) const
@@ -292,6 +299,21 @@ namespace aveditor
 		return m_eStatus;
 	}
 
+	FAudioFifo* CEditor::GetAudioFifo()
+	{
+		return m_AVObject.GetAudioFofo();
+	}
+
+	void CEditor::SetAudioPts(const int64_t n_nPts)
+	{
+		m_AVObject.SetAudioPts(n_nPts);
+	}
+
+	const int64_t CEditor::GetAudioPts() const
+	{
+		return m_AVObject.GetAudioPts();
+	}
+
 	void CEditor::Run()
 	{
 		try
@@ -300,23 +322,23 @@ namespace aveditor
 
 			m_eStatus = EEditStatus::ES_Running;
 
-			int nMaxBatch = GetMaxBatch();
-			int nBatch = 0;
+			m_nMaxBatchIndex = GetMaxBatchIndex();
+			m_nCurBatchIndex = 0;
 
 			m_AVObject.Init();
-			m_AVObject.StartBatch(nBatch);
+			m_AVObject.StartBatch(m_nCurBatchIndex);
 			SetStagesStart(true);
 
 			while (true)
 			{
 				if (m_AVObject.IsBatchEnd())
 				{
-					nBatch++;
-					if (nBatch > nMaxBatch || 
+					m_nCurBatchIndex++;
+					if (m_nCurBatchIndex > m_nMaxBatchIndex ||
 						m_eStatus == EEditStatus::ES_ForceStop)
 						break;
 
-					m_AVObject.StartBatch(nBatch);
+					m_AVObject.StartBatch(m_nCurBatchIndex);
 					SetStagesStart(true);
 				}
 
@@ -343,7 +365,7 @@ namespace aveditor
 
 	void CEditor::CheckSelectedStreams()
 	{
-		int nMaxBatch = GetMaxBatch();
+		int nMaxBatch = GetMaxBatchIndex();
 		int nOutputStreams = m_OutputContext.StreamsCode();
 
 		for (int i = 0; i <= nMaxBatch; i++)
@@ -356,7 +378,7 @@ namespace aveditor
 			}
 
 			ThrowExceptionExpr(nOutputStreams != nCode,
-				"Selected streams for input/output context are not match");
+				"Selected streams for input/output context are not match\n");
 		}
 	}
 
@@ -381,6 +403,8 @@ namespace aveditor
 
 	void CEditor::Release()
 	{
+		m_nMaxBatchIndex = -1;
+
 		CloseOutputFile();
 		m_OutputContext.Release();
 		ReleaseVector(m_vInputContext);

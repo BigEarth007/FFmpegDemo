@@ -13,13 +13,15 @@ namespace aveditor
 	}
 
 	void CAVConverter::Init(FCodecContext* n_InputCodec,
-		FCodecContext* n_OutputCodec)
+		FCodecContext* n_OutputCodec,
+		CEditor* n_Editor)
 	{
 		ThrowExceptionExpr(!n_InputCodec || !n_InputCodec->m_Context,
 			"Missing input codec.\n");
 
 		m_InputCodec = n_InputCodec;
 		m_OutputCodec = n_OutputCodec;
+		m_Editor = n_Editor;
 
 		CompCodecFormat();
 	}
@@ -117,6 +119,13 @@ namespace aveditor
 
 			if (AVERROR_EOF == ret)
 			{
+				if (m_InputCodec->m_Context->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
+				{
+					if (m_Editor->GetCurrentBatchIndex() < m_Editor->GetMaxBatchIndex())
+						m_Editor->SetAudioPts(m_FrameConvert->GetConvertPts());
+					else
+						m_FrameConvert->CleanCache();
+				}
 				m_FrameConvert->CleanCache();
 				// Null frame for ending
 				FinishedConvert(nullptr);
@@ -156,6 +165,11 @@ namespace aveditor
 		m_Callback = n_Callback;
 	}
 
+	const int64_t CAVConverter::GetFramePts() const
+	{
+		return m_FrameConvert ? m_FrameConvert->GetConvertPts() : 0;
+	}
+
 	int CAVConverter::CompCodecFormat()
 	{
 		// The convert is valid if it's different between 2 codec
@@ -167,6 +181,9 @@ namespace aveditor
 		else if (m_InputCodec->m_Context->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO)
 		{
 			m_FrameConvert = new CAudioConvert();
+			m_FrameConvert->SetAudioFifo(m_Editor->GetAudioFifo());
+			// Set audio pts of the last input context
+			m_FrameConvert->SetConvertPts(m_Editor->GetAudioPts());
 			m_eStreamType = EStreamType::ST_Audio;
 		}
 
@@ -259,7 +276,7 @@ namespace aveditor
 				if (itr2 != mOutputCodecContext->end())
 					OutputCodecContext = &itr2->second;
 
-				m_Decoder[i].Init(&itr->second, OutputCodecContext);
+				m_Decoder[i].Init(&itr->second, OutputCodecContext, m_Editor);
 				m_Decoder[i].SetSubnumber(InputContext->GetSubnumber());
 
 				m_Decoder[i].SetFinishedCallback(

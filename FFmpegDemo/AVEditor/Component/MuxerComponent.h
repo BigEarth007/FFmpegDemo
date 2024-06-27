@@ -28,29 +28,17 @@ namespace aveditor
 		virtual int ReceiveData(const EStreamType n_eStreamType,
 			void* n_Data, EDataType n_eType, int n_nIndex = 0);
 
-		// Add duration of input context that has been done
-		void AddDuration(const double n_dDuration);
-
-		// Set current duration
-		void SetDuration(const double n_dDuration);
-
 	protected:
 		// Read AVPacket from queue, 
 		AVPacket* ReadCache();
 
-		void Duration2Pts();
-
 		struct FTimeSync
 		{
-			double		dTimebase = -AV_NOPTS_VALUE;
-			double		dTimestamp = -AV_NOPTS_VALUE;
-			// 1: hold data
-			// 0: empty
-			int			nHold = 0;
+			double		dTimebase = AVERROR_EOF;
+			double		dTimestamp = AVERROR_EOF;
+
 			// stream index
 			int			nStreamIndex = 0;
-			// Duration to pts
-			int64_t		nPts = 0;
 		};
 
 	protected:

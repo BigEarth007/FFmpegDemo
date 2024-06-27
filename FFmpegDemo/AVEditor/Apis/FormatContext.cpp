@@ -214,22 +214,6 @@ namespace aveditor
 
 		OpenCodecContext();
 
-		for (unsigned int i = 0;i < m_Context->nb_streams; i++)
-		{
-			AVStream* Stream = m_Context->streams[i];
-			EStreamType eStreamType = MediaType2StreamType(Stream->codecpar->codec_type);
-
-			auto itr = m_mCodecContext.find(eStreamType);
-			if (itr != m_mCodecContext.end())
-			{
-				int ret = avcodec_parameters_from_context(
-					Stream->codecpar, itr->second.m_Context);
-				ThrowExceptionCodeExpr(ret < 0, ret, "Fail to copy parameters from stream.");
-
-				Stream->codecpar->codec_tag = itr->second.m_Context->codec_tag;
-			}
-		}
-
 		int ret = avformat_write_header(m_Context, nullptr);
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to write header into output file.");
 
@@ -238,12 +222,7 @@ namespace aveditor
 
 	int FFormatContext::InterleavedWritePacket(AVPacket* n_Packet)
 	{
-		AVRational CodecTimeBase = GetCodecContextTimeBase(n_Packet->stream_index);
-		AVRational StreamTimeBase = GetStreamTimeBase(n_Packet->stream_index);
-		av_packet_rescale_ts(n_Packet, CodecTimeBase, StreamTimeBase);
-
-		//double dSec = n_Packet->pts * av_q2d(StreamTimeBase);
-		//LogInfo("Stream: %d, write packet, pts: %lf.\n", n_Packet->stream_index, dSec);
+		RescalePacket(n_Packet);
 
 		int ret = av_interleaved_write_frame(m_Context, n_Packet);
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to write packet into output file.");
@@ -253,9 +232,7 @@ namespace aveditor
 
 	int FFormatContext::WritePacket(AVPacket* n_Packet)
 	{
-		AVRational CodecTimeBase = GetCodecContextTimeBase(n_Packet->stream_index);
-		AVRational StreamTimeBase = GetStreamTimeBase(n_Packet->stream_index);
-		av_packet_rescale_ts(n_Packet, CodecTimeBase, StreamTimeBase);
+		RescalePacket(n_Packet);
 
 		int ret = av_write_frame(m_Context, n_Packet);
 		ThrowExceptionCodeExpr(ret < 0, ret, "Fail to write packet into output file.");
@@ -368,6 +345,7 @@ namespace aveditor
 					av_inv_q(n_InputCodecContext->time_base));
 				ctx->time_base = av_inv_q(ctx->framerate);
 				ctx->pix_fmt = GetSupportedPixelFormat(Codec, n_InputCodecContext->pix_fmt);
+				ctx->gop_size = n_InputCodecContext->gop_size;
 			}
 		}
 
@@ -426,6 +404,17 @@ namespace aveditor
 			if (n_eStreamType == EStreamType::ST_Size || n_eStreamType == itr->first)
 			{
 				itr->second.Open();
+
+				auto Type = StreamType2MediaType(itr->first);
+				auto Stream = FindStream(Type);
+
+				if (Stream)
+				{
+					int ret = avcodec_parameters_from_context(
+						Stream->codecpar, itr->second.m_Context);
+					ThrowExceptionCodeExpr(ret < 0, ret, "Fail to copy parameters from stream.");
+					Stream->codecpar->codec_tag = itr->second.m_Context->codec_tag;
+				}
 			}
 		}
 	}
@@ -499,6 +488,16 @@ namespace aveditor
 			if (n_CodecContext->time_base.den > 65535)
 				n_CodecContext->time_base.den = 65535;
 		}
+	}
+
+	void FFormatContext::RescalePacket(AVPacket* n_Packet)
+	{
+		AVRational CodecTimeBase = GetCodecContextTimeBase(n_Packet->stream_index);
+		AVRational StreamTimeBase = GetStreamTimeBase(n_Packet->stream_index);
+		av_packet_rescale_ts(n_Packet, CodecTimeBase, StreamTimeBase);
+
+		//double dSec = n_Packet->pts * av_q2d(StreamTimeBase);
+		//LogInfo("Stream: %d, write packet, pts: %lf.\n", n_Packet->stream_index, dSec);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

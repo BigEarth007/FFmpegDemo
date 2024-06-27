@@ -9,7 +9,8 @@ namespace aveditor
 		CDemuxComponent();
 		virtual ~CDemuxComponent();
 
-		void Init(int n_nContextIndex);
+		void Init(int n_nContextIndex,
+			const std::map<EStreamType, int64_t>& n_mPts);
 		int Run();
 		void Release();
 
@@ -31,12 +32,29 @@ namespace aveditor
 
 		CInputContext* GetInputContext();
 
+		const std::map<EStreamType, int64_t> GetPts() const;
+
 		// Write null AVPacket/AVFrame
 		void WriteEndData();
 
 	protected:
+		struct FStreamInfo
+		{
+			// Max pts of last input context
+			int64_t LastMax = 0;
+			// Max pts of current input context
+			int64_t CurMax = 0;
+
+			AVRational TimeBase = { 1,1 };
+
+			std::vector<int64_t> Sections;
+
+			int64_t IsPacketUseable(const int64_t n_nPts, const int64_t n_nDuration);
+		};
+
+
 		int		m_nContextIndex = -1;
 
-		std::map<EStreamType, FCodecContext>* m_OutputCodecContext = nullptr;
+		std::map<EStreamType, FStreamInfo> m_mStreamInfo;
 	};
 }

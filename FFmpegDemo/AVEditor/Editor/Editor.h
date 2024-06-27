@@ -67,7 +67,10 @@ namespace aveditor
 		void SetMaxBufferSize(int n_nSize);
 
 		// Get max batch index of all input contexts
-		const int GetMaxBatch() const;
+		const int GetMaxBatchIndex() const;
+
+		// Get current batch index of all input contexts
+		const int GetCurrentBatchIndex() const;
 
 		// Get max batch index of all input contexts that for audio mix
 		const int GetMaxAudioMixBatch(int& n_nCount) const;
@@ -97,6 +100,11 @@ namespace aveditor
 
 		EEditStatus GetStatus() const;
 
+		FAudioFifo* GetAudioFifo();
+
+		void SetAudioPts(const int64_t n_nPts);
+		const int64_t GetAudioPts() const;
+
 	protected:
 		virtual void Run();
 
@@ -117,5 +125,8 @@ namespace aveditor
 		CAVObject					m_AVObject;
 
 		EEditStatus					m_eStatus = EEditStatus::ES_Stopped;
+
+		int							m_nMaxBatchIndex = -1;
+		int							m_nCurBatchIndex = 0;
 	};
 }

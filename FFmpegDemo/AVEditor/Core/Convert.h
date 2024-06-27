@@ -20,6 +20,7 @@ namespace aveditor
 		*/
 		virtual int Process(AVFrame* n_Frame);
 
+		virtual void SetAudioFifo(FAudioFifo* n_AudioFifo);
 		virtual void CleanCache();
 
 		// Is the converter valid
@@ -27,6 +28,9 @@ namespace aveditor
 
 		// Set this callback to do with the AVFrame that have been converted
 		void SetFinishedCallback(std::function<int(AVFrame*)> n_func);
+
+		void SetConvertPts(const int64_t n_nPts);
+		const int64_t GetConvertPts() const;
 
 		virtual void Release();
 
@@ -39,6 +43,8 @@ namespace aveditor
 
 		// Output codec context
 		AVCodecContext* m_OutputCodecContext = nullptr;
+
+		int64_t			m_nConvertPts = 0;
 	};
 
 	extern "C"
@@ -56,8 +62,8 @@ namespace aveditor
 		CVideoConvert();
 		~CVideoConvert();
 
-		virtual void Init(FCodecContext* n_InputCodecContext,
-			FCodecContext* n_OutputCodecContext);
+		void Init(FCodecContext* n_InputCodecContext,
+			FCodecContext* n_OutputCodecContext) override;
 
 		/*
 		* Do with n_Frame
@@ -65,12 +71,12 @@ namespace aveditor
 		*	0: nothing to do
 		*	1: convert the n_Frame
 		*/
-		virtual int Process(AVFrame* n_Frame);
+		int Process(AVFrame* n_Frame) override;
 
 		// Is the converter valid
-		virtual const bool IsValid() const;
+		const bool IsValid() const override;
 
-		virtual void Release();
+		void Release() override;
 
 	protected:
 		// Crete converter for decoded frame
@@ -93,8 +99,8 @@ namespace aveditor
 		CAudioConvert();
 		~CAudioConvert();
 
-		virtual void Init(FCodecContext* n_InputCodecContext,
-			FCodecContext* n_OutputCodecContext);
+		void Init(FCodecContext* n_InputCodecContext,
+			FCodecContext* n_OutputCodecContext) override;
 
 		/*
 		* Do with n_Frame
@@ -102,16 +108,18 @@ namespace aveditor
 		*	0: nothing to do
 		*	1: convert the n_Frame
 		*/
-		virtual int Process(AVFrame* n_Frame);
+		int Process(AVFrame* n_Frame) override;
 
 		// Is the converter valid
-		virtual const bool IsValid() const;
+		const bool IsValid() const override;
+
+		void SetAudioFifo(FAudioFifo* n_AudioFifo) override;
 
 		// If all AVFrame are read from the queue, we should pop the last samples 
 		// from AVAudioFifo buffer
-		void CleanCache();
+		void CleanCache() override;
 
-		virtual void Release();
+		void Release() override;
 
 	protected:
 		// Crete converter for decoded frame
@@ -128,14 +136,13 @@ namespace aveditor
 		// Pop frame from AVAudioFifo buffer
 		void PopFromFifo();
 
+		AVFrame* AllocFrame(int n_nFrameSize);
+
 	protected:
 		// Converter
 		FResample		m_Resample;
 
 		// Audio FIFO buffer
-		FAudioFifo		m_AudioFifo;
-
-		// The counter of Audio AVFrame samples
-		int64_t			m_nAudioFramePts = 0;
+		FAudioFifo*		m_AudioFifo = nullptr;
 	};
 }

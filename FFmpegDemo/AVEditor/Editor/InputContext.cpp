@@ -219,53 +219,9 @@ namespace aveditor
 			m_vSections.erase(m_vSections.begin() + n_nSectionIndex);
 	}
 
-	int64_t CInputContext::IsPacketInSelectedSection(AVPacket* n_Packet,
-		const AVRational& n_TimeBase)
+	const std::vector<aveditor::FSection>& CInputContext::GetSelectedSections() const
 	{
-		if (m_vSections.size() == 0 || !n_Packet) return -1;
-
-		size_t i = 0;
-
-		int64_t nSection = 0;
-		double dSecond = n_Packet->pts * av_q2d(n_TimeBase);
-
-		for (i = 0; i < m_vSections.size(); i++)
-		{
-			if (dSecond < m_vSections[i].dFrom)
-				break;
-
-			if (m_vSections[i].dFrom <= dSecond &&
-				m_vSections[i].dTo > dSecond)
-			{
-				if (m_vSections[i].nFrom[n_Packet->stream_index] == AVERROR_EOF)
-					m_vSections[i].nFrom[n_Packet->stream_index] = n_Packet->pts;
-
-				n_Packet->pts = n_Packet->pts - 
-					m_vSections[i].nFrom[n_Packet->stream_index]
-					+ nSection;
-
-				n_Packet->dts = n_Packet->pts;
-				n_Packet->pos = -1;
-
-// 				if (n_Packet->stream_index == 0)
-// 				{
-// 					DebugLog("pts: %zd pos: %zd timestamp: %lf\n", n_Packet->pts, n_Packet->pos,
-// 						n_Packet->pts * av_q2d(n_TimeBase));
-// 				}
-
-				return i;
-			}
-
-			if (m_vSections[i].nTo[n_Packet->stream_index] == AVERROR_EOF)
-				m_vSections[i].nTo[n_Packet->stream_index] = n_Packet->pts;
-
-			nSection += m_vSections[i].nTo[n_Packet->stream_index] -
-				m_vSections[i].nFrom[n_Packet->stream_index];
-		}
-
-		if (i == m_vSections.size()) return AVERROR_EOF;
-
-		return -2;
+		return m_vSections;
 	}
 
 	void CInputContext::WriteFrameDatas(EStreamType n_eStreamType,

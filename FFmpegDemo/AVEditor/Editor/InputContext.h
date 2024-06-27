@@ -3,6 +3,15 @@
 
 namespace aveditor
 {
+	// The selected section of the input context
+	struct FSection
+	{
+		// Section start time; 0: meams not in use
+		double dFrom = 0;
+		// Section end time; 0: meams to end
+		double dTo = 0;
+	};
+
 	class AVEDITOR_API CInputContext : public CBaseContext
 	{
 	public:
@@ -52,14 +61,8 @@ namespace aveditor
 		// Remove section
 		void RemoveSelectedSection(const size_t& n_nSectionIndex);
 
-		// Check weather packet in selected section
-		// return value: 
-		//	0: n_Packet in selected section
-		//	-1: no need to check, no section is specified
-		//	-2: not in selected section
-		//	AVERROR_EOF: timestamp of n_Packet overflows the last section, it can be end
-		int64_t IsPacketInSelectedSection(AVPacket* n_Packet, 
-			const AVRational& n_TimeBase);
+		// Get selected sections
+		const std::vector<FSection>& GetSelectedSections() const;
 
 		// Write Frame data into this empty input file
 		// if n_Data is nullptr, then write nullptr frame
@@ -73,27 +76,6 @@ namespace aveditor
 			const void* n_Data, const int& n_nSize);
 		AVFrame* WriteAudioFrame(AVCodecContext* n_CodecContext,
 			const void* n_Data, const int& n_nSize);
-
-		// The selected section of the input context
-		struct FSection
-		{
-			// Section start time; 0: meams not in use
-			double dFrom = 0;
-			// Section end time; 0: meams to end
-			double dTo = 0;
-
-			int64_t nFrom[(int)EStreamType::ST_Size] = { 0 };
-			int64_t nTo[(int)EStreamType::ST_Size] = { 0 };
-
-			FSection()
-			{
-				for (int i = 0; i < (int)EStreamType::ST_Size; i++)
-				{
-					nFrom[i] = AVERROR_EOF;
-					nTo[i] = AVERROR_EOF;
-				}
-			}
-		};
 
 	protected:
 		// What to do with this input context

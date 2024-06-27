@@ -31,6 +31,11 @@ namespace aveditor
 		return 0;
 	}
 
+	void IFrameConvert::SetAudioFifo(FAudioFifo* n_AudioFifo)
+	{
+
+	}
+
 	void IFrameConvert::CleanCache()
 	{
 
@@ -44,6 +49,16 @@ namespace aveditor
 	void IFrameConvert::SetFinishedCallback(std::function<int(AVFrame*)> n_func)
 	{
 		m_funcFinished = n_func;
+	}
+
+	void IFrameConvert::SetConvertPts(const int64_t n_nPts)
+	{
+		m_nConvertPts = n_nPts;
+	}
+
+	const int64_t IFrameConvert::GetConvertPts() const
+	{
+		return m_nConvertPts;
 	}
 
 	void IFrameConvert::Release()
@@ -177,6 +192,7 @@ namespace aveditor
 			Frame->data, Frame->linesize);
 
 		Frame->pts = n_Frame->pts;
+		m_nConvertPts = Frame->pts;
 		//LogInfo("Video frame: %zd.\n", Frame->pts);
 
 		FinishedConvert(Frame);
@@ -203,7 +219,8 @@ namespace aveditor
 
 	int CAudioConvert::Process(AVFrame* n_Frame)
 	{
-		if (!n_Frame || (!m_Resample.m_Context && !m_AudioFifo.m_Context))
+		if (!n_Frame || 
+			(!m_Resample.m_Context && (!m_AudioFifo || !m_AudioFifo->m_Context)))
 		{
 			FinishedConvert(n_Frame);
 			return 0;
@@ -216,12 +233,17 @@ namespace aveditor
 
 	const bool CAudioConvert::IsValid() const
 	{
-		return m_Resample.m_Context || m_AudioFifo.m_Context;
+		return m_Resample.m_Context || (m_AudioFifo && m_AudioFifo->m_Context);
+	}
+
+	void CAudioConvert::SetAudioFifo(FAudioFifo* n_AudioFifo)
+	{
+		m_AudioFifo = n_AudioFifo;
 	}
 
 	void CAudioConvert::CleanCache()
 	{
-		while (m_AudioFifo.Size() > 0)
+		while (m_AudioFifo && m_AudioFifo->Size() > 0)
 		{
 			PopFromFifo();
 		}
@@ -230,7 +252,6 @@ namespace aveditor
 	void CAudioConvert::Release()
 	{
 		m_Resample.Release();
-		m_AudioFifo.Release();
 	}
 
 	void CAudioConvert::CreateConverter(FCodecContext* n_InputCodecContext,
@@ -266,27 +287,28 @@ namespace aveditor
 			Input->frame_size == Output->frame_size)
 			return;
 
-		m_AudioFifo.Alloc(Output->sample_fmt,
-			Output->ch_layout.nb_channels,
-			Output->frame_size);
+		if (m_AudioFifo && !m_AudioFifo->m_Context)
+			m_AudioFifo->Alloc(Output->sample_fmt,
+				Output->ch_layout.nb_channels,
+				Output->frame_size);
 	}
 
 	void CAudioConvert::Converting(AVFrame* n_Frame)
 	{
-		if (m_AudioFifo.m_Context)
+		if (m_AudioFifo && m_AudioFifo->m_Context)
 		{
 			// Push into audio fifo buffer
 			if (m_Resample.m_Context)
 			{
 				int nSamples = m_Resample.Cover(n_Frame);
-				m_AudioFifo.Push(m_Resample.m_CoverData, nSamples);
+				m_AudioFifo->Push(m_Resample.m_CoverData, nSamples);
 			}
 			else
 			{
-				m_AudioFifo.Push(n_Frame->data, n_Frame->nb_samples);
+				m_AudioFifo->Push(n_Frame->data, n_Frame->nb_samples);
 			}
 
-			while (m_AudioFifo.IsReadable())
+			while (m_AudioFifo->IsReadable())
 			{
 				PopFromFifo();
 			}
@@ -295,16 +317,7 @@ namespace aveditor
 		{
 			if (!m_Resample.m_Context) return;
 
-			AVFrame* Frame = FFrame::AudioFrame(
-				m_OutputCodecContext->frame_size,
-				m_Resample.GetOutputSampleRate(),
-				m_Resample.GetOutputSampleFormat(),
-				&m_OutputCodecContext->ch_layout);
-
-			Frame->pts = m_nAudioFramePts;
-			m_nAudioFramePts += Frame->nb_samples;
-
-			//LogInfo("Audio frame: %zd.\n", Frame->pts);
+			AVFrame* Frame = AllocFrame(m_OutputCodecContext->frame_size);
 
 			m_Resample.Cover((const uint8_t**)n_Frame->extended_data,
 				n_Frame->nb_samples, Frame->data, Frame->nb_samples);
@@ -315,22 +328,30 @@ namespace aveditor
 
 	void CAudioConvert::PopFromFifo()
 	{
-		int nSampleSize = m_AudioFifo.NextSampleCount();
+		int nSampleSize = m_AudioFifo->NextSampleCount();
 		if (nSampleSize <= 0) return;
 
+		AVFrame* Frame = AllocFrame(nSampleSize);
+
+		m_AudioFifo->Pop(Frame);
+
+		FinishedConvert(Frame);
+	}
+
+	AVFrame* CAudioConvert::AllocFrame(int n_nFrameSize)
+	{
 		AVFrame* Frame = FFrame::AudioFrame(
-			nSampleSize,
+			n_nFrameSize,
 			m_OutputCodecContext->sample_rate,
 			m_OutputCodecContext->sample_fmt,
 			&m_OutputCodecContext->ch_layout);
 
-		m_AudioFifo.Pop(Frame);
-		Frame->pts = m_nAudioFramePts;
-		m_nAudioFramePts += nSampleSize;
+		Frame->pts = m_nConvertPts;
+		m_nConvertPts += n_nFrameSize;
 
 		//LogInfo("Audio frame: %zd.\n", Frame->pts);
 
-		FinishedConvert(Frame);
+		return Frame;
 	}
 
 }

@@ -93,6 +93,8 @@ namespace aveditor
 		// Addition setting for codec context
 		void CodecContextAddition(AVCodecContext* n_CodecContext);
 
+		void RescalePacket(AVPacket* n_Packet);
+
 		bool m_bWriteHeader = false;
 	};
 
