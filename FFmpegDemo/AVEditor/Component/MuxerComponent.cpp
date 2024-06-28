@@ -160,7 +160,7 @@ namespace aveditor
 
 		Packet->stream_index = m_TimeSync[nMinIndex].nStreamIndex;
 		//AVDebug("======StreamIndex: %d; pts: %zd => dts: %zd\n", Packet->stream_index, Packet->pts, Packet->dts);
-		Packet->dts = Packet->pts;
+		//Packet->dts = Packet->pts;
 
 		m_TimeSync[nMinIndex].dTimestamp = AVERROR_EOF;
 

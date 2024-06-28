@@ -114,7 +114,7 @@ namespace aveditor
 			auto itr = m_mStreamInfo.find(eStreamType);
 			if (itr == m_mStreamInfo.end()) break;
 
-			Packet->pts = Packet->dts;
+			//Packet->pts = Packet->dts;
 
 			if (itr->second.TimeBase.den > 1)
 			{

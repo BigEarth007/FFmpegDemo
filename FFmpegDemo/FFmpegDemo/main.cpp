@@ -16,7 +16,7 @@ static void Cover()
 	{
 		CEditor Editor;
 		 
-		FFormatContext& Input = Editor.OpenInputFile("1.mp4");		 
+		FFormatContext& Input = Editor.OpenInputFile("4.mp4");		 
 		FFormatContext& Output = Editor.AllocOutputFile("1.ts");
 
 #if 1
@@ -39,7 +39,7 @@ static void Cover()
 		Output.BuildStream(mOutput->at(EStreamType::EST_Video));
 		Output.BuildStream(mOutput->at(EStreamType::EST_Audio));
 #endif
-		Output.GetCodecContext(EStreamType::ST_Audio)->bit_rate = 330000;
+		Output.GetCodecContext(EStreamType::ST_Audio)->bit_rate = 384000;
 		// Split the input context into fragments
 		// It can be used to cut input file
 		Editor.AddSelectedSection(5, 5);
@@ -64,7 +64,7 @@ static void Concat()
 	{
 		CEditor Editor;
 
-		FFormatContext& Input = Editor.OpenInputFile("1.mp4");
+		FFormatContext& Input = Editor.OpenInputFile("4.mp4");
 		FFormatContext& Input2 = Editor.OpenInputFile("2.mp4");
 
 		FFormatContext& Output = Editor.AllocOutputFile("3.mp4");
@@ -347,8 +347,8 @@ int main()
 	auto start = std::chrono::steady_clock::now();
 	//SetupEditorLog();
 	
-	//Cover();
-	Concat();
+	Cover();
+	//Concat();
 	//DetachAudioStream();
 	//MixAudio();
 	//Play();

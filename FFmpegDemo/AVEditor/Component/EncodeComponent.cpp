@@ -103,7 +103,7 @@ namespace aveditor
 					//LogInfo("StreamIndex: %d; Pts: %lld, Dts: %lld, Duration: %lld\n",
 					//	n_Packet->stream_index, n_Packet->pts, n_Packet->dts, n_Packet->duration);
 
-					n_Packet->pts = n_Packet->dts;
+					//n_Packet->pts = n_Packet->dts;
 
 					WriteData(n_eStreamType, n_Packet, EDataType::DT_Packet, 0);
 

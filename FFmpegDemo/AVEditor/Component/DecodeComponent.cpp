@@ -92,14 +92,14 @@ namespace aveditor
 			ret = m_InputCodec->DecodePacket(n_Packet,
 				[this](AVFrame* n_Frame) {
 
-					if (m_OutputCodec &&
-						m_OutputCodec->m_Context &&
-						n_Frame->pict_type == AVPictureType::AV_PICTURE_TYPE_B &&
-						(m_OutputCodec->m_Context->codec->capabilities & AV_CODEC_CAP_DELAY) != 0)
-					{
-						// converter b frame to p frame
-						n_Frame->pict_type = AVPictureType::AV_PICTURE_TYPE_P;
-					}
+					//if (m_OutputCodec &&
+					//	m_OutputCodec->m_Context &&
+					//	n_Frame->pict_type == AVPictureType::AV_PICTURE_TYPE_B &&
+					//	(m_OutputCodec->m_Context->codec->capabilities & AV_CODEC_CAP_DELAY) != 0)
+					//{
+					//	// converter b frame to p frame
+					//	n_Frame->pict_type = AVPictureType::AV_PICTURE_TYPE_P;
+					//}
 
 					// if (n_Frame->pts <= 0 &&
 					// 	n_CodecContext.m_Context->codec_id == AVCodecID::AV_CODEC_ID_MP3 &&
@@ -259,6 +259,16 @@ namespace aveditor
 				InputContext->GetTask() == ETask::T_AMixBranch)
 			{
 				bDecodeFlag[(int)EStreamType::ST_Audio] = true;
+			}
+		}
+
+		if (m_OutputContext->IsValid() &&
+			(InputContext->GetSelectedSections().size() > 1) ||
+			m_Editor->GetMaxBatchIndex() > 0)
+		{
+			for (size_t i = 0; i < (int)EStreamType::ST_Size; i++)
+			{
+				bDecodeFlag[i] = true;
 			}
 		}
 

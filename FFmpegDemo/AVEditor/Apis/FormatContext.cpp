@@ -496,8 +496,11 @@ namespace aveditor
 		AVRational StreamTimeBase = GetStreamTimeBase(n_Packet->stream_index);
 		av_packet_rescale_ts(n_Packet, CodecTimeBase, StreamTimeBase);
 
+		if (n_Packet->dts > n_Packet->pts)
+			n_Packet->dts = n_Packet->pts;
 		//double dSec = n_Packet->pts * av_q2d(StreamTimeBase);
 		//LogInfo("Stream: %d, write packet, pts: %lf.\n", n_Packet->stream_index, dSec);
+		AVDebug("StreamIndex: %d; pts: %zd => dts: %zd\n", n_Packet->stream_index, n_Packet->pts, n_Packet->dts);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
