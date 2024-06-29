@@ -69,7 +69,8 @@ static void Concat()
 
 		FFormatContext& Output = Editor.AllocOutputFile("3.mp4");
 
-		Output.BuildAllStreams(Input);
+		Output.BuildAllStreams(Input2);
+		Output.GetCodecContext(EStreamType::ST_Video)->bit_rate = 2000000;
 		Editor.OpenOutputFile();
 
 		Editor.Start();
@@ -347,8 +348,8 @@ int main()
 	auto start = std::chrono::steady_clock::now();
 	//SetupEditorLog();
 	
-	Cover();
-	//Concat();
+	//Cover();
+	Concat();
 	//DetachAudioStream();
 	//MixAudio();
 	//Play();

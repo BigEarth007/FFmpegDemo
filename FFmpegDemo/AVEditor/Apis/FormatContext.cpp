@@ -146,7 +146,11 @@ namespace aveditor
 			else
 			{
 				if (n_eCodecID != AVCodecID::AV_CODEC_ID_NONE)
-					BuildEncodeCodecContext(n_eCodecID, n_CodecContext);
+				{
+					auto ctx = BuildEncodeCodecContext(n_eCodecID, n_CodecContext);
+					if (InputStream)
+						ctx->CopyAdditionParameter(InputStream);
+				}
 			}
 		};
 
@@ -178,9 +182,6 @@ namespace aveditor
 			}
 				break;
 			}
-
-			if (InputStream)
-				m_mCodecContext[itr->first].CopyAdditionParameter(InputStream);
 
 			BuildStream(m_mCodecContext[itr->first]);
 		}
@@ -345,7 +346,7 @@ namespace aveditor
 					av_inv_q(n_InputCodecContext->time_base));
 				ctx->time_base = av_inv_q(ctx->framerate);
 				ctx->pix_fmt = GetSupportedPixelFormat(Codec, n_InputCodecContext->pix_fmt);
-				ctx->gop_size = n_InputCodecContext->gop_size;
+				//ctx->gop_size = n_InputCodecContext->gop_size;
 			}
 		}
 
@@ -500,7 +501,7 @@ namespace aveditor
 			n_Packet->dts = n_Packet->pts;
 		//double dSec = n_Packet->pts * av_q2d(StreamTimeBase);
 		//LogInfo("Stream: %d, write packet, pts: %lf.\n", n_Packet->stream_index, dSec);
-		AVDebug("StreamIndex: %d; pts: %zd => dts: %zd\n", n_Packet->stream_index, n_Packet->pts, n_Packet->dts);
+		//AVDebug("StreamIndex: %d; pts: %zd => dts: %zd\n", n_Packet->stream_index, n_Packet->pts, n_Packet->dts);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
