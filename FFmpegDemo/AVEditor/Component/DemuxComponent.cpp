@@ -86,7 +86,7 @@ namespace aveditor
 			if (ret < 0)
 			{
 				WriteEndData();
-				AVDebug("-----------------------------------------------------\n\n");
+				//AVDebug("-----------------------------------------------------\n\n");
 				break;
 			}
 
@@ -134,7 +134,8 @@ namespace aveditor
 			}
 
 			Packet->pts += itr->second.LastMax - nDiscardDuration;
-			Packet->dts = Packet->pts;
+			Packet->dts += itr->second.LastMax - nDiscardDuration;
+			//Packet->dts = Packet->pts;
 			Packet->pos = -1;
 
 			if (itr->second.CurMax < Packet->pts + Packet->duration)
