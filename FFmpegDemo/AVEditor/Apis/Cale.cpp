@@ -56,12 +56,8 @@ namespace aveditor
 
 	void FCale::Release()
 	{
-		for (int i = 0;i < 4; i++)
-		{
-			if (m_CaleData[i])
-				av_freep(&m_CaleData[i]);
-		}
-		
+		if (m_CaleData[0])
+			av_freep(&m_CaleData[0]);
 		memset(m_LineSize, 0, sizeof(m_LineSize));
 
 		if (m_Context)
