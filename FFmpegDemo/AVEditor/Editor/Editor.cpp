@@ -22,6 +22,8 @@ namespace aveditor
 	{
 		Stop();
 		Join();
+		
+		ReleaseVector(m_vStages);
 	}
 
 	FFormatContext& CEditor::OpenInputFile(
