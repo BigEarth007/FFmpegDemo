@@ -335,13 +335,14 @@ namespace aveditor
 			{
 				if (m_AVObject.IsBatchEnd())
 				{
-					m_nCurBatchIndex++;
-					if (m_nCurBatchIndex > m_nMaxBatchIndex ||
+					if (m_nCurBatchIndex + 1 > m_nMaxBatchIndex ||
 						m_eStatus == EEditStatus::ES_ForceStop)
 						break;
 
+					SetStagesPause(true);
+					m_nCurBatchIndex++;
 					m_AVObject.StartBatch(m_nCurBatchIndex);
-					SetStagesStart(true);
+					SetStagesPause(false);
 				}
 
 				Sleep(kSleepDelay * 50);
