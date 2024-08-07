@@ -191,13 +191,9 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 		}
 		else
 		{
-			while (nFree < knMaxBufferSize)
-			{
-				 UpdateTime(nFree);
-
-				nFree = m_AudioOutput->bytesFree();
-				std::this_thread::sleep_for(std::chrono::milliseconds(kSleepDelay));
-			}
+			int nLast = int((m_dLength - m_dTime) * 1000);
+			std::this_thread::sleep_for(std::chrono::milliseconds(nLast));
+			m_dTime = m_dLength;
 		}
 	}
 }
