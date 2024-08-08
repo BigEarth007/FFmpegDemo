@@ -88,7 +88,7 @@ void AVPlayer::Load()
 	AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
 	if (aoCodec) aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
 
-	if (m_AudioOutput == nullptr && aoCodec)
+	if (aoCodec)
 	{
 		QAudioFormat format;
 		format.setSampleRate(aoCodec->sample_rate);						// 例如：44.1 kHz  
@@ -101,10 +101,15 @@ void AVPlayer::Load()
 		m_nBytesPerSample = nFmt * aoCodec->ch_layout.nb_channels;
 		m_dDurionPerSample = 1.0 / aoCodec->sample_rate;
 
-		QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+		if (!m_AudioOutput || m_AudioOutput->format() != format)
+		{
+			QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+	
+			m_AudioOutput = new QAudioOutput(info, format, this);
+			m_AudioOutput->setBufferSize(knMaxBufferSize);
+		}
 
-		m_AudioOutput = new QAudioOutput(info, format, this);
-		m_AudioOutput->setBufferSize(knMaxBufferSize);
+		m_Device = m_AudioOutput->start();
 	}
 
 	m_Editor.SetFinishedCallback(
@@ -114,7 +119,7 @@ void AVPlayer::Load()
 			if (m_AudioOutput)
 			{
 				m_AudioOutput->stop();
-				//m_AudioOutput->deleteLater();
+				m_Device = nullptr;
 			}
 		});
 
@@ -128,8 +133,6 @@ void AVPlayer::Load()
 	m_nSelectedStreams = m_Editor.GetOutputContext()->StreamsCode();
 	m_nFreeBytes = knMaxBufferSize;
 	m_dTime = 0;
-
-	if (m_AudioOutput) m_Device = m_AudioOutput->start();
 }
 
 void AVPlayer::VideoFrameArrived(const AVFrame* n_Frame)
@@ -191,9 +194,11 @@ void AVPlayer::AudioFrameArrived(const AVFrame* n_Frame)
 		}
 		else
 		{
-			int nLast = int((m_dLength - m_dTime) * 1000);
-			std::this_thread::sleep_for(std::chrono::milliseconds(nLast));
-			m_dTime = m_dLength;
+			int nSamples = (knMaxBufferSize - n_nFree) / m_nBytesPerSample;
+			double dTime = nSamples * m_dDurionPerSample;
+			
+			std::this_thread::sleep_for(std::chrono::milliseconds(int(dTime * 1000)));
+			m_dTime += dTime;
 		}
 	}
 }
