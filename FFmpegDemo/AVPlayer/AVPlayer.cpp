@@ -69,24 +69,29 @@ void AVPlayer::Load()
 	FFormatContext& Input = m_Editor.OpenInputFile(m_sMediaFile, ETask::T_Normal, kStreamVA);
 
 	AVCodecContext* vCodec = Input.GetCodecContext(EStreamType::ST_Video);
-	//AVCodecContext* aCodec = Input.GetCodecContext(EStreamType::EST_Audio);
+	AVCodecContext* aCodec = Input.GetCodecContext(EStreamType::EST_Audio);
 
 	// Maybe AVFrame decoded from input context should be convert to target 
 	// sample format/pixel format, so the target codec context should be created
 	FFormatContext& Output = m_Editor.GetOutputContext()->GetContext();
-	Output.BuildEncodeCodecContext(AVCodecID::AV_CODEC_ID_RAWVIDEO, vCodec);
-	//Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_VIDEO));
 
-	Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_AUDIO));
-	// could not use this function, as the frame_size is 0
-	//Output.BuildCodecContext(aCodec->codec_id, aCodec);
+	if (vCodec)
+	{
+		Output.BuildEncodeCodecContext(AVCodecID::AV_CODEC_ID_RAWVIDEO, vCodec);
+		AVCodecContext* ovCodec = Output.GetCodecContext(EStreamType::ST_Video);
+		ovCodec->pix_fmt = GetSupportedPixelFormat(ovCodec->codec, 
+			AVPixelFormat::AV_PIX_FMT_RGB24);
+	}
 
-	AVCodecContext* ovCodec = Output.GetCodecContext(EStreamType::ST_Video);
-	ovCodec->pix_fmt = GetSupportedPixelFormat(ovCodec->codec, 
-		AVPixelFormat::AV_PIX_FMT_RGB24);
-
-	AVCodecContext* aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
-	if (aoCodec) aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
+	AVCodecContext* aoCodec = nullptr;
+	if (aCodec)
+	{
+		Output.BuildEncodeCodecContext(Input.FindStream(AVMEDIA_TYPE_AUDIO));
+		// could not use this function, as the frame_size is 0
+		//Output.BuildCodecContext(aCodec->codec_id, aCodec);
+		aoCodec = Output.GetCodecContext(EStreamType::ST_Audio);
+		if (aoCodec) aoCodec->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
+	}
 
 	if (aoCodec)
 	{
