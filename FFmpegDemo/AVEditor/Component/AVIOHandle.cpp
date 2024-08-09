@@ -87,6 +87,14 @@ namespace aveditor
 		return m_eStatus == ECompStatus::CS_Stop;
 	}
 
+	void IAVIOHandle::ResetStreamEndFlag()
+	{
+		for (int i = 0; i < (int)EStreamType::ST_Size; i++)
+		{
+			m_Cache[i].EndFlag = 1;
+		}
+	}
+
 	void IAVIOHandle::SetStreamEndFlag(const EStreamType n_eStreamType,
 		const int n_nEndFlag)
 	{
