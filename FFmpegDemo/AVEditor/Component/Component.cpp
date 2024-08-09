@@ -16,6 +16,8 @@ namespace aveditor
 		m_eStatus = ECompStatus::CS_Ready;
 
 		m_OutputContext = &m_Editor->GetOutputContext()->GetContext();
+
+		ResetStreamEndFlag();
 	}
 
 	void IComponent::Init(int n_nContextIndex)
