@@ -42,6 +42,8 @@ namespace aveditor
 		// Get end flag, is it end now
 		const bool GetEndFlag() const;
 
+		void ResetStreamEndFlag();
+
 		// Set stream end flag
 		void SetStreamEndFlag(const EStreamType n_eStreamType,
 			const int n_nEndFlag);
